@@ -93,6 +93,13 @@ h1 {
   color: #f7fbff;
 }
 
+.service-picker-label {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #f7fbff;
+}
+
 .search-panel {
   display: grid;
   gap: 10px;

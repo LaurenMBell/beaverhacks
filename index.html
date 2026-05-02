@@ -22,6 +22,42 @@
         <div class="eyebrow">Benton County, Oregon</div>
         <h1>Healthcare Finder</h1>
 
+        <div class="service-picker">
+          <p class="service-picker-label">Healthcare services</p>
+          <div class="chip-group" aria-label="Healthcare service filters">
+            <button class="chip is-active" data-service="primary-care" type="button">
+              Primary care
+            </button>
+            <button class="chip" data-service="urgent-care" type="button">
+              Urgent care
+            </button>
+            <button class="chip" data-service="hospital" type="button">
+              Hospitals
+            </button>
+            <button class="chip" data-service="dentist" type="button">
+              Dental care
+            </button>
+            <button class="chip" data-service="pharmacy" type="button">
+              Pharmacies
+            </button>
+            <button class="chip" data-service="mental-health" type="button">
+              Mental health
+            </button>
+            <button class="chip" data-service="womens-health" type="button">
+              Women's health
+            </button>
+            <button class="chip" data-service="pediatrics" type="button">
+              Pediatrics
+            </button>
+            <button class="chip" data-service="physical-therapy" type="button">
+              Physical therapy
+            </button>
+            <button class="chip" data-service="medical-lab" type="button">
+              Medical labs
+            </button>
+          </div>
+        </div>
+
         <form id="search-form" class="search-panel">
           <label class="field">
             <span>Location</span>
@@ -32,22 +68,6 @@
               value="97330"
               placeholder="Enter an address or ZIP code"
             />
-          </label>
-
-          <label class="field">
-            <span>Healthcare service</span>
-            <select id="service-select" name="service">
-              <option value="primary-care">Primary care</option>
-              <option value="urgent-care">Urgent care</option>
-              <option value="hospital">Hospitals</option>
-              <option value="dentist">Dental care</option>
-              <option value="pharmacy">Pharmacies</option>
-              <option value="mental-health">Mental health</option>
-              <option value="womens-health">Women's health</option>
-              <option value="pediatrics">Pediatrics</option>
-              <option value="physical-therapy">Physical therapy</option>
-              <option value="medical-lab">Medical labs</option>
-            </select>
           </label>
 
           <label class="field">
@@ -69,21 +89,6 @@
             Search healthcare services
           </button>
         </form>
-
-        <div class="chip-group" aria-label="Quick service filters">
-          <button class="chip is-active" data-service="primary-care" type="button">
-            Primary care
-          </button>
-          <button class="chip" data-service="urgent-care" type="button">
-            Urgent care
-          </button>
-          <button class="chip" data-service="mental-health" type="button">
-            Mental health
-          </button>
-          <button class="chip" data-service="pharmacy" type="button">
-            Pharmacies
-          </button>
-        </div>
       </section>
 
       <section class="map-panel">
