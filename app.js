@@ -71,6 +71,7 @@ const state = {
   markers: [],
   results: [],
   searchOrigin: COUNTY.center,
+  activeView: "results",
 };
 
 const elements = {
@@ -78,14 +79,17 @@ const elements = {
   keywordsInput: document.querySelector("#keywords-input"),
   locationInput: document.querySelector("#location-input"),
   map: document.querySelector("#map"),
+  mapView: document.querySelector("#map-view"),
   openNowInput: document.querySelector("#open-now-input"),
   resultsList: document.querySelector("#results-list"),
+  resultsView: document.querySelector("#results-view"),
   resultsTitle: document.querySelector("#results-title"),
   searchButton: document.querySelector("#search-button"),
   searchForm: document.querySelector("#search-form"),
   serviceSelect: document.querySelector("#service-select"),
   statusMessage: document.querySelector("#status-message"),
   summaryPill: document.querySelector("#summary-pill"),
+  viewToggle: document.querySelector("#view-toggle"),
 };
 
 const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey;
@@ -94,6 +98,7 @@ bootstrap();
 
 function bootstrap() {
   bindEvents();
+  setActiveView(state.activeView);
 
   if (!googleMapsApiKey || googleMapsApiKey === "YOUR_GOOGLE_MAPS_API_KEY") {
     renderMapSetupMessage();
@@ -111,6 +116,10 @@ function bindEvents() {
   elements.searchForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await performSearch();
+  });
+
+  elements.viewToggle.addEventListener("click", () => {
+    setActiveView(state.activeView === "results" ? "map" : "results");
   });
 
   elements.chips.forEach((chip) => {
@@ -376,6 +385,7 @@ function focusResult(index) {
     return;
   }
 
+  setActiveView("map");
   state.map.panTo(result.location);
   state.map.setZoom(13);
   openInfoWindow(result, marker);
@@ -432,6 +442,25 @@ function renderMapSetupMessage(customMessage) {
       </div>
     </div>
   `;
+}
+
+function setActiveView(view) {
+  state.activeView = view === "map" ? "map" : "results";
+
+  const showingResults = state.activeView === "results";
+  elements.resultsView.hidden = !showingResults;
+  elements.mapView.hidden = showingResults;
+  elements.resultsView.classList.toggle("panel-view-active", showingResults);
+  elements.mapView.classList.toggle("panel-view-active", !showingResults);
+  elements.viewToggle.classList.toggle("is-map", !showingResults);
+  elements.viewToggle.setAttribute("aria-pressed", String(!showingResults));
+
+  if (!showingResults && state.map && window.google?.maps) {
+    window.requestAnimationFrame(() => {
+      google.maps.event.trigger(state.map, "resize");
+      state.map.panTo(state.searchOrigin);
+    });
+  }
 }
 
 function drawCountyBoundaryHint() {
