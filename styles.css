@@ -1,7 +1,8 @@
 :root {
   color-scheme: light;
   --bg: #dfeefa;
-  --panel: rgba(255, 248, 236, 0.94);
+  --panel: #fff8ec;
+  --sidebar: #79a9d1;
   --panel-border: rgba(24, 52, 92, 0.14);
   --text: #16233b;
   --muted: #5b6f88;
@@ -31,31 +32,32 @@ body {
 
 body {
   min-height: 100vh;
+  background: var(--bg);
 }
 
 .shell {
   display: grid;
   grid-template-columns: minmax(320px, 430px) 1fr;
-  gap: 12px;
-  min-height: calc(100vh - 20px);
-  padding: 10px;
+  gap: 0;
+  min-height: 100vh;
+  padding: 0;
 }
 
 .sidebar,
 .map-panel {
-  background: var(--panel);
-  backdrop-filter: blur(18px);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 18px;
+  padding: 24px 22px;
   min-height: 0;
+  background: var(--sidebar);
+  color: #f7fbff;
 }
 
 .eyebrow,
@@ -65,7 +67,7 @@ body {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent-strong);
+  color: rgba(247, 251, 255, 0.88);
 }
 
 h1,
@@ -78,11 +80,17 @@ h1 {
   font-size: clamp(2.2rem, 4vw, 3.5rem);
   line-height: 0.95;
   letter-spacing: -0.05em;
+  color: #fdfdfd;
 }
 
 .map-note,
 .status-message {
   color: var(--muted);
+}
+
+.sidebar .field span,
+.sidebar .checkbox-row span {
+  color: #f7fbff;
 }
 
 .search-panel {
@@ -113,7 +121,7 @@ select {
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid rgba(31, 36, 48, 0.12);
-  background: var(--surface-strong);
+  background: rgba(255, 250, 241, 0.98);
   color: var(--text);
 }
 
@@ -186,8 +194,9 @@ button:focus {
 .map-panel {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 20px);
-  padding: 16px;
+  min-height: 100vh;
+  padding: 20px 20px 18px;
+  background: var(--panel);
 }
 
 .map-header {
@@ -274,9 +283,9 @@ button:focus {
   flex: 1;
   min-height: 0;
   margin-top: 12px;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  background: var(--surface);
+  background: #fffdf8;
   border: 1px solid rgba(24, 52, 92, 0.08);
 }
 
@@ -304,7 +313,7 @@ button:focus {
 .result-card {
   padding: 14px;
   border-radius: var(--radius-lg);
-  background: var(--surface-strong);
+  background: #fffaf1;
   border: 1px solid rgba(31, 36, 48, 0.08);
 }
 
@@ -384,18 +393,21 @@ button:focus {
     grid-template-columns: 1fr;
     min-height: auto;
   }
+
+  .sidebar,
+  .map-panel {
+    min-height: auto;
+  }
 }
 
 @media (max-width: 680px) {
   .shell {
-    padding: 8px;
-    gap: 8px;
+    gap: 0;
   }
 
   .sidebar,
   .map-panel {
     padding: 14px;
-    border-radius: 16px;
   }
 
   .map-header,
