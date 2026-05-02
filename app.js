@@ -456,13 +456,17 @@ async function setActiveView(view) {
   elements.viewToggle.setAttribute("aria-pressed", String(!showingResults));
 
   if (!showingResults) {
+    await nextFrame();
     await ensureMapInitialized();
 
     if (state.map && window.google?.maps) {
       renderMarkers(state.results);
       window.requestAnimationFrame(() => {
         google.maps.event.trigger(state.map, "resize");
-        state.map.panTo(state.searchOrigin);
+        if (!state.results.length) {
+          state.map.panTo(state.searchOrigin);
+          state.map.setZoom(11);
+        }
       });
     }
   }
@@ -472,6 +476,8 @@ async function ensureMapInitialized() {
   if (state.map || !window.google?.maps) {
     return;
   }
+
+  await nextFrame();
 
   state.map = new google.maps.Map(elements.map, {
     center: state.searchOrigin,
@@ -487,9 +493,14 @@ async function ensureMapInitialized() {
     renderMarkers(state.results);
     window.requestAnimationFrame(() => {
       google.maps.event.trigger(state.map, "resize");
-      state.map.panTo(state.searchOrigin);
     });
   }
+}
+
+function nextFrame() {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
 }
 
 function drawCountyBoundaryHint() {
