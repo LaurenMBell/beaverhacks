@@ -79,6 +79,8 @@ const elements = {
   locationInput: document.querySelector("#location-input"),
   map: document.querySelector("#map"),
   openNowInput: document.querySelector("#open-now-input"),
+  transportationSelect: document.querySelector("#transportation-select"),
+  travelTimeSelect: document.querySelector("#travel-time"),
   resultsList: document.querySelector("#results-list"),
   resultsTitle: document.querySelector("#results-title"),
   searchButton: document.querySelector("#search-button"),
@@ -125,6 +127,14 @@ function bindEvents() {
   elements.serviceSelect.addEventListener("change", () => {
     syncActiveChip(elements.serviceSelect.value);
   });
+
+  elements.transportationSelect?.addEventListener("change", async () => {
+    await performSearch();
+  });
+
+  elements.travelTimeSelect?.addEventListener("change", async () => {
+    await performSearch();
+  });
 }
 
 function loadGoogleMapsScript() {
@@ -133,7 +143,7 @@ function loadGoogleMapsScript() {
   const script = document.createElement("script");
   script.src =
     `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsApiKey)}` +
-    `&v=weekly&libraries=places&callback=initHealthcareFinder`;
+    `&v=weekly&libraries=places,routes&callback=initHealthcareFinder`;
   script.async = true;
   script.defer = true;
   script.onerror = () => {
@@ -223,14 +233,7 @@ async function performSearch({ initial = false } = {}) {
     const detailedPlaces = await Promise.all(
       places.map(async (place) => {
         try {
-          await place.fetchFields({
-            fields: [
-              "googleMapsURI",
-              "websiteURI",
-              "nationalPhoneNumber",
-              "regularOpeningHours",
-            ],
-          });
+          await fetchPlaceDetails(place);
         } catch (detailError) {
           console.warn("Place details fetch failed for result:", detailError);
         }
@@ -239,10 +242,42 @@ async function performSearch({ initial = false } = {}) {
       })
     );
 
-    const results = detailedPlaces
+    // Normalize and prefilter by county boundary
+    let results = detailedPlaces
       .map((place) => normalizePlace(place, searchOrigin.formattedAddress))
-      .filter((place) => place.location && isWithinCountyBoundary(place.location))
-      .sort((left, right) => left.distanceMeters - right.distanceMeters);
+      .filter((place) => place.location && isWithinCountyBoundary(place.location));
+
+    // Read transport selections
+    const transportModeVal = elements.transportationSelect?.value || "drive";
+    const maxTravelMinutes = Number(elements.travelTimeSelect?.value) || null;
+
+    // Use the Maps JavaScript DistanceMatrixService to get travel time (avoids CORS).
+    const travelModeForMatrix =
+      transportModeVal === "walk"
+        ? google.maps.TravelMode.WALKING
+        : transportModeVal === "bike"
+        ? google.maps.TravelMode.BICYCLING
+        : google.maps.TravelMode.DRIVING;
+
+    if (results.length) {
+      await computeRouteMatrixForResults(results, travelModeForMatrix);
+    }
+
+    // Apply travel-time filter if a max travel time is selected
+    if (Number.isFinite(maxTravelMinutes) && maxTravelMinutes > 0) {
+      const maxSeconds = maxTravelMinutes * 60;
+      results = results.filter(
+        (place) => (place.travelTimeSeconds ?? Number.POSITIVE_INFINITY) <= maxSeconds
+      );
+    }
+
+    // Sort results: if travel-time filter is active, sort by travel time, otherwise by distance
+    results.sort((left, right) => {
+      if (Number.isFinite(maxTravelMinutes) && maxTravelMinutes > 0) {
+        return (left.travelTimeSeconds || Number.POSITIVE_INFINITY) - (right.travelTimeSeconds || Number.POSITIVE_INFINITY);
+      }
+      return left.distanceMeters - right.distanceMeters;
+    });
 
     state.results = results;
     renderMarkers(results);
@@ -281,7 +316,7 @@ function normalizePlace(place, searchAddress) {
   return {
     address: place.formattedAddress || "Address not provided",
     distanceMeters,
-    googleMapsUri: place.googleMapsURI || "",
+    googleMapsLinks: place.googleMapsLinks || place.googleMapsLinks || "",
     hours:
       (Array.isArray(openingHours) && openingHours.length
         ? openingHours.join(" • ")
@@ -293,7 +328,7 @@ function normalizePlace(place, searchAddress) {
     rating: typeof place.rating === "number" ? place.rating : null,
     searchAddress,
     serviceType: place.primaryTypeDisplayName || place.primaryType || "Healthcare",
-    websiteUri: place.websiteURI || "",
+    websiteURI: place.websiteURI || place.websiteURI || "",
   };
 }
 
@@ -319,11 +354,11 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
   elements.resultsList.innerHTML = results
     .map((result, index) => {
       const actions = [
-        result.googleMapsUri
-          ? `<a href="${result.googleMapsUri}" target="_blank" rel="noreferrer">Directions</a>`
+        result.googleMapsLinks
+          ? `<a href="${result.googleMapsLinks}" target="_blank" rel="noreferrer">Directions</a>`
           : "",
-        result.websiteUri
-          ? `<a href="${result.websiteUri}" target="_blank" rel="noreferrer">Website</a>`
+        result.websiteURI
+          ? `<a href="${result.websiteURI}" target="_blank" rel="noreferrer">Website</a>`
           : "",
         result.phone ? `<a href="tel:${result.phone}">Call</a>` : "",
       ]
@@ -333,6 +368,9 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
       const meta = [
         result.serviceType ? `<span class="meta-pill">${escapeHtml(result.serviceType)}</span>` : "",
         result.rating ? `<span class="meta-pill">Rating ${result.rating.toFixed(1)}</span>` : "",
+        Number.isFinite(result.travelTimeSeconds)
+          ? `<span class="meta-pill">${escapeHtml(formatTravelTime(result.travelTimeSeconds))}</span>`
+          : "",
         Number.isFinite(result.distanceMeters)
           ? `<span class="meta-pill">${formatMiles(result.distanceMeters)} away</span>`
           : "",
@@ -405,8 +443,8 @@ function openInfoWindow(result, marker) {
     `<strong>${escapeHtml(result.name)}</strong>`,
     `<div>${escapeHtml(result.address)}</div>`,
     result.phone ? `<div>${escapeHtml(result.phone)}</div>` : "",
-    result.googleMapsUri
-      ? `<div><a href="${result.googleMapsUri}" target="_blank" rel="noreferrer">Open in Google Maps</a></div>`
+    result.googleMapsLinks
+      ? `<div><a href="${result.googleMapsLinks}" target="_blank" rel="noreferrer">Open in Google Maps</a></div>`
       : "",
   ]
     .filter(Boolean)
@@ -553,6 +591,89 @@ function degreesToRadians(value) {
 function formatMiles(distanceMeters) {
   return `${(distanceMeters * 0.000621371).toFixed(1)} mi`;
 }
+
+function formatTravelTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds === Number.POSITIVE_INFINITY) return "Time unavailable";
+  const mins = Math.round(seconds / 60);
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.floor(mins / 60);
+  const remaining = mins % 60;
+  return `${hours} hr${hours > 1 ? "s" : ""}${remaining ? ` ${remaining} min` : ""}`;
+}
+
+async function fetchPlaceDetails(place) {
+  const detailFields = [
+    "googleMapsLinks",
+    "websiteURI",
+    "nationalPhoneNumber",
+    "regularOpeningHours",
+  ];
+
+  if (!place?.fetchFields) return;
+
+  try {
+    await place.fetchFields({ fields: detailFields });
+  } catch (error) {
+    const message = typeof error?.message === "string" ? error.message : "";
+
+    if (message.includes("fields: not iterable") || message.includes("unknown property 0")) {
+      await place.fetchFields(detailFields);
+      return;
+    }
+
+    throw error;
+  }
+}
+
+async function computeRouteMatrixForResults(results, transportModeVal) {
+  const modeMap = {
+    drive: 'DRIVE',
+    walk: 'WALK',
+    bike: 'BICYCLE',
+    transit: 'TRANSIT'
+  };
+
+  const travelMode = modeMap[transportModeVal] ?? 'DRIVE';
+
+  await Promise.all(
+    results.map(async (place) => {
+      try {
+        const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': googleMapsApiKey,
+            'X-Goog-FieldMask': 'routes.duration'
+          },
+          body: JSON.stringify({
+            origin: {
+              location: { latLng: { 
+                latitude: state.searchOrigin.lat, 
+                longitude: state.searchOrigin.lng 
+              }}
+            },
+            destination: {
+              location: { latLng: { 
+                latitude: place.location.lat, 
+                longitude: place.location.lng 
+              }}
+            },
+            travelMode,
+          })
+        });
+
+        const data = await response.json();
+        const durationStr = data.routes?.[0]?.duration;
+        place.travelTimeSeconds = durationStr ? parseInt(durationStr) : null;
+      } catch (err) {
+        console.warn('Routes API failed for place:', place.displayName, err);
+        place.travelTimeSeconds = null;
+      }
+    })
+  );
+}
+
+
 
 function escapeHtml(value) {
   return String(value)
