@@ -99,35 +99,53 @@
             Pharmacies
           </button>
         </div>
-
-        <section class="results-panel">
-          <div class="results-header">
-            <div>
-              <p class="results-label">Results</p>
-              <h2 id="results-title">Search Benton County healthcare services</h2>
-            </div>
-            <div id="summary-pill" class="summary-pill">Ready</div>
-          </div>
-
-          <div id="status-message" class="status-message">
-            Enter a location and choose a service type to begin.
-          </div>
-
-          <div id="results-list" class="results-list"></div>
-        </section>
       </section>
 
       <section class="map-panel">
         <div class="map-header">
           <div>
-            <p class="results-label">Map</p>
-            <h2>Providers and services</h2>
+            <p class="results-label">View</p>
+            <h2 id="results-title">Search Benton County healthcare services</h2>
           </div>
-          <p class="map-note">
-            Uses Google Maps Places data and a Benton County search boundary.
-          </p>
+          <div class="view-controls">
+            <div id="summary-pill" class="summary-pill">Ready</div>
+            <button
+              id="view-toggle"
+              class="view-toggle"
+              type="button"
+              aria-label="Toggle between results and map"
+              aria-pressed="false"
+            >
+              <span class="view-toggle-track">
+                <span class="view-toggle-thumb"></span>
+              </span>
+              <span class="view-toggle-labels">
+                <span class="view-toggle-label view-toggle-label-map">Map</span>
+                <span class="view-toggle-label view-toggle-label-results">Results</span>
+              </span>
+            </button>
+          </div>
         </div>
-        <div id="map" class="map" aria-label="Map of healthcare services"></div>
+        <div id="status-message" class="status-message map-status">
+          Enter a location and choose a service type to begin.
+        </div>
+        <div class="view-window">
+          <div
+            id="results-view"
+            class="panel-view panel-view-active results-view"
+            aria-label="Healthcare search results"
+          >
+            <div id="results-list" class="results-list"></div>
+          </div>
+          <div
+            id="map-view"
+            class="panel-view map-view"
+            aria-label="Map of healthcare services"
+            hidden
+          >
+            <div id="map" class="map"></div>
+          </div>
+        </div>
       </section>
     </div>
 
