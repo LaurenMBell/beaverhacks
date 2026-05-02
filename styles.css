@@ -11,9 +11,9 @@
   --accent-soft: rgba(159, 199, 229, 0.2);
   --warm: #fff8ec;
   --shadow: 0 24px 60px rgba(22, 35, 59, 0.12);
-  --radius-xl: 28px;
-  --radius-lg: 20px;
-  --radius-md: 14px;
+  --radius-xl: 20px;
+  --radius-lg: 14px;
+  --radius-md: 10px;
 }
 
 * {
@@ -36,8 +36,8 @@ body {
 .shell {
   display: grid;
   grid-template-columns: minmax(360px, 460px) 1fr;
-  gap: 24px;
-  padding: 24px;
+  gap: 12px;
+  padding: 10px;
 }
 
 .sidebar,
@@ -50,7 +50,7 @@ body {
 }
 
 .sidebar {
-  padding: 28px;
+  padding: 18px;
 }
 
 .eyebrow,
@@ -295,13 +295,13 @@ button:focus {
 }
 
 .map-header {
-  padding: 24px 24px 0;
+  padding: 18px 18px 0;
 }
 
 .map {
   min-height: 560px;
-  margin: 18px;
-  border-radius: 24px;
+  margin: 14px;
+  border-radius: 18px;
   overflow: hidden;
   background: #dcecf7;
 }
@@ -336,8 +336,8 @@ button:focus {
 
 @media (max-width: 680px) {
   .shell {
-    padding: 14px;
-    gap: 14px;
+    padding: 10px;
+    gap: 10px;
   }
 
   .sidebar,
