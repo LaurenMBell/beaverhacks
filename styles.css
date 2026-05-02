@@ -1,16 +1,16 @@
 :root {
   color-scheme: light;
-  --bg: #f5f1e7;
-  --bg-strong: #efe5d0;
-  --panel: rgba(255, 250, 242, 0.86);
-  --panel-border: rgba(88, 60, 31, 0.14);
-  --text: #1f2430;
-  --muted: #5d6470;
-  --accent: #0f766e;
-  --accent-strong: #0b5c56;
-  --accent-soft: rgba(15, 118, 110, 0.12);
-  --warm: #d97706;
-  --shadow: 0 24px 60px rgba(63, 39, 18, 0.12);
+  --bg: #dfeefa;
+  --bg-strong: #fff8ec;
+  --panel: rgba(255, 248, 236, 0.94);
+  --panel-border: rgba(24, 52, 92, 0.14);
+  --text: #16233b;
+  --muted: #5b6f88;
+  --accent: #79a9d1;
+  --accent-strong: #1a355d;
+  --accent-soft: rgba(159, 199, 229, 0.2);
+  --warm: #fff8ec;
+  --shadow: 0 24px 60px rgba(22, 35, 59, 0.12);
   --radius-xl: 28px;
   --radius-lg: 20px;
   --radius-md: 14px;
@@ -26,10 +26,7 @@ body {
   min-height: 100%;
   font-family: "Manrope", sans-serif;
   color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(217, 119, 6, 0.16), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.16), transparent 26%),
-    linear-gradient(180deg, #f8f5ee 0%, var(--bg) 100%);
+  background: var(--bg);
 }
 
 body {
@@ -96,9 +93,8 @@ h1 {
   gap: 14px;
   padding: 16px 18px;
   border-radius: var(--radius-lg);
-  background:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.13), rgba(217, 119, 6, 0.11));
-  border: 1px solid rgba(15, 118, 110, 0.16);
+  background: #fff8ec;
+  border: 1px solid rgba(26, 53, 93, 0.12);
 }
 
 .county-copy {
@@ -144,7 +140,7 @@ select {
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid rgba(31, 36, 48, 0.12);
-  background: rgba(255, 255, 255, 0.9);
+  background: #fffaf1;
   color: var(--text);
 }
 
@@ -172,11 +168,11 @@ button:focus {
   border-radius: 18px;
   padding: 15px 18px;
   font-weight: 800;
-  color: #fff;
+  color: #f8f4ea;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--accent) 0%, #14b8a6 100%);
+  background: var(--accent-strong);
   transition: transform 180ms ease, box-shadow 180ms ease;
-  box-shadow: 0 14px 32px rgba(15, 118, 110, 0.24);
+  box-shadow: 0 14px 32px rgba(26, 53, 93, 0.22);
 }
 
 .search-button:hover {
@@ -198,8 +194,8 @@ button:focus {
 
 .chip {
   border: 1px solid rgba(31, 36, 48, 0.12);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--text);
+  background: var(--accent);
+  color: #f7fbff;
   border-radius: 999px;
   padding: 10px 14px;
   cursor: pointer;
@@ -209,7 +205,7 @@ button:focus {
 .chip.is-active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: #f7fbff;
 }
 
 .results-header,
@@ -225,7 +221,7 @@ button:focus {
   border-radius: 999px;
   font-size: 0.9rem;
   font-weight: 800;
-  background: rgba(255, 255, 255, 0.75);
+  background: #fff8ec;
   color: var(--accent-strong);
 }
 
@@ -243,7 +239,7 @@ button:focus {
 .result-card {
   padding: 18px;
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.78);
+  background: #fff8ec;
   border: 1px solid rgba(31, 36, 48, 0.08);
 }
 
@@ -307,8 +303,7 @@ button:focus {
   margin: 18px;
   border-radius: 24px;
   overflow: hidden;
-  background:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(217, 119, 6, 0.14));
+  background: #dcecf7;
 }
 
 .map-setup {
