@@ -68,6 +68,7 @@ const state = {
   geocoder: null,
   infoWindow: null,
   map: null,
+  mapCircle: null,
   markers: [],
   results: [],
   searchOrigin: COUNTY.center,
@@ -118,8 +119,8 @@ function bindEvents() {
     await performSearch();
   });
 
-  elements.viewToggle.addEventListener("click", () => {
-    setActiveView(state.activeView === "results" ? "map" : "results");
+  elements.viewToggle.addEventListener("click", async () => {
+    await setActiveView(state.activeView === "results" ? "map" : "results");
   });
 
   elements.chips.forEach((chip) => {
@@ -159,18 +160,8 @@ function loadGoogleMapsScript() {
 }
 
 async function initMapExperience() {
-  state.map = new google.maps.Map(elements.map, {
-    center: COUNTY.center,
-    zoom: 11,
-    mapTypeControl: false,
-    streetViewControl: false,
-    fullscreenControl: false,
-  });
-
   state.geocoder = new google.maps.Geocoder();
   state.infoWindow = new google.maps.InfoWindow();
-
-  drawCountyBoundaryHint();
   updateStatus(
     "Search for primary care, urgent care, pharmacies, mental health, and more across Benton County.",
     "Map ready"
@@ -180,7 +171,7 @@ async function initMapExperience() {
 }
 
 async function performSearch({ initial = false } = {}) {
-  if (!state.map || !state.geocoder) {
+  if (!state.geocoder) {
     return;
   }
 
@@ -200,8 +191,10 @@ async function performSearch({ initial = false } = {}) {
     const searchOrigin = await geocodeLocation(locationQuery);
     state.searchOrigin = searchOrigin.location;
 
-    state.map.panTo(searchOrigin.location);
-    state.map.setZoom(11);
+    if (state.map) {
+      state.map.panTo(searchOrigin.location);
+      state.map.setZoom(11);
+    }
 
     const { Place } = await google.maps.importLibrary("places");
     const request = {
@@ -238,7 +231,9 @@ async function performSearch({ initial = false } = {}) {
       .sort((left, right) => left.distanceMeters - right.distanceMeters);
 
     state.results = results;
-    renderMarkers(results);
+    if (state.map) {
+      renderMarkers(results);
+    }
     renderResults(results, service.label, searchOrigin.formattedAddress, initial);
   } catch (error) {
     console.error(error);
@@ -377,15 +372,20 @@ function renderMarkers(results) {
   state.map.fitBounds(bounds, 56);
 }
 
-function focusResult(index) {
+async function focusResult(index) {
   const result = state.results[index];
-  const marker = state.markers[index];
 
-  if (!result || !marker) {
+  if (!result) {
     return;
   }
 
-  setActiveView("map");
+  await setActiveView("map");
+  const marker = state.markers[index];
+
+  if (!marker) {
+    return;
+  }
+
   state.map.panTo(result.location);
   state.map.setZoom(13);
   openInfoWindow(result, marker);
@@ -444,7 +444,7 @@ function renderMapSetupMessage(customMessage) {
   `;
 }
 
-function setActiveView(view) {
+async function setActiveView(view) {
   state.activeView = view === "map" ? "map" : "results";
 
   const showingResults = state.activeView === "results";
@@ -455,7 +455,36 @@ function setActiveView(view) {
   elements.viewToggle.classList.toggle("is-map", !showingResults);
   elements.viewToggle.setAttribute("aria-pressed", String(!showingResults));
 
-  if (!showingResults && state.map && window.google?.maps) {
+  if (!showingResults) {
+    await ensureMapInitialized();
+
+    if (state.map && window.google?.maps) {
+      renderMarkers(state.results);
+      window.requestAnimationFrame(() => {
+        google.maps.event.trigger(state.map, "resize");
+        state.map.panTo(state.searchOrigin);
+      });
+    }
+  }
+}
+
+async function ensureMapInitialized() {
+  if (state.map || !window.google?.maps) {
+    return;
+  }
+
+  state.map = new google.maps.Map(elements.map, {
+    center: state.searchOrigin,
+    zoom: 11,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+  });
+
+  drawCountyBoundaryHint();
+
+  if (state.results.length) {
+    renderMarkers(state.results);
     window.requestAnimationFrame(() => {
       google.maps.event.trigger(state.map, "resize");
       state.map.panTo(state.searchOrigin);
@@ -464,7 +493,11 @@ function setActiveView(view) {
 }
 
 function drawCountyBoundaryHint() {
-  new google.maps.Circle({
+  if (state.mapCircle) {
+    state.mapCircle.setMap(null);
+  }
+
+  state.mapCircle = new google.maps.Circle({
     map: state.map,
     center: COUNTY.center,
     radius: COUNTY.radiusMeters,
