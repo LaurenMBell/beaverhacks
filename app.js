@@ -500,3 +500,148 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
+
+// ---- Chatbot ----
+
+const GEMINI_KEY = window.APP_CONFIG?.geminiApiKey;;
+const MODEL = "gemini-2.5-flash";
+
+const GEMINI_URL =
+  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_KEY}`;
+
+let chatHistory = [];
+
+function toggleChat() {
+  const win = document.getElementById('chat-window');
+  const isHidden = win.style.display === 'none';
+  win.style.display = isHidden ? 'flex' : 'none';
+
+  if (isHidden && chatHistory.length === 0) {
+    addMessage('bot', 'Hi! Describe your symptoms and I\'ll suggest what type of doctor to see and help you find affordable care nearby. 🏥');
+  }
+}
+
+function addMessage(role, text) {
+  const messages = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  div.textContent = text;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  return div;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const userText = input.value.trim();
+  if (!userText) return;
+
+  // Show user message
+  addMessage('user', userText);
+  input.value = '';
+
+  // Add to history
+  chatHistory.push({
+    role: 'user',
+    parts: [{ text: userText }]
+  });
+
+  // Show loading
+  const loadingDiv = addMessage('loading', 'Thinking...');
+
+  try {
+    const response = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `You are a helpful healthcare triage assistant.
+
+    When a user describes symptoms:
+    1. Suggest what type of doctor/specialist they should see
+    2. Indicate urgency: Emergency, Urgent (within 24hrs), or Routine
+    3. Give 1–2 sentences of practical advice
+    4. If symptoms sound serious, always recommend emergency care
+
+    Format your response like this:
+
+    Doctor: <type of doctor> <add 2 line spacing>
+    Urgency: <Emergency / Urgent / Routine> <add 2 line spacing>
+    Advice: <short advice> <add 2 line spacing>
+
+    Keep responses concise and friendly.
+    Never diagnose — only suggest next steps.`
+              }
+            ]
+          },
+          ...chatHistory
+        ]
+      })
+    });
+
+    const data = await response.json();
+
+    // Check for errors from Gemini
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
+
+    const botReply = data.candidates[0].content.parts[0].text;
+
+    // Replace loading with real response
+    loadingDiv.className = 'message bot';
+    loadingDiv.textContent = botReply;
+
+    // Add assistant reply to history
+    chatHistory.push({
+      role: 'model',       // Gemini uses "model" instead of "assistant"
+      parts: [{ text: botReply }]
+    });
+
+    // Auto-search for providers based on reply
+    autoSearchFromReply(botReply);
+
+  } catch (err) {
+    loadingDiv.className = 'message bot';
+    loadingDiv.textContent = 'Sorry, something went wrong. Please try again.';
+    console.error('Gemini error:', err);
+  }
+}
+
+// Auto-trigger provider search based on AI response
+function autoSearchFromReply(reply) {
+  const specialtyMap = {
+    'primary care': 'primary-care',
+    'urgent care': 'urgent-care',
+    'emergency': 'urgent-care',
+    'dentist': 'dentist',
+    'pediatrician': 'pediatrics',
+    'gynecologist': 'womens-health',
+    'therapist': 'mental-health',
+    'psychiatrist': 'mental-health'
+  };
+
+  const found = Object.keys(specialtyMap).find(s =>
+    reply.toLowerCase().includes(s)
+  );
+
+  if (found) {
+    const mapped = specialtyMap[found];
+
+    // ✅ use your actual dropdown
+    elements.serviceSelect.value = mapped;
+
+    // update UI + search
+    syncActiveChip(mapped);
+    performSearch();
+
+    addMessage('bot', `🔍 I found nearby ${found}s for you!`);
+  }
+}
+
+window.toggleChat = toggleChat;
+window.sendMessage = sendMessage;

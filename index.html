@@ -133,5 +133,27 @@
 
     <script src="./config.js"></script>
     <script type="module" src="./app.js"></script>
+
+    <!-- Chat bubble button -->
+    <button id="chat-toggle" onclick="toggleChat()">💬 Get Advice From AI</button>
+
+    <!-- Chat window -->
+    <div id="chat-window" style="display:none">
+      <div id="chat-header">
+        <span>🏥 Healthcare Assistant</span>
+        <button onclick="toggleChat()">✕</button>
+      </div>
+      <div id="chat-messages"></div>
+      <div id="chat-input-area">
+        <input 
+          type="text" 
+          id="chat-input" 
+          placeholder="Describe your symptoms..."
+          onkeypress="if(event.key==='Enter') sendMessage()"
+        />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+
   </body>
 </html>
