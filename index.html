@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Benton County Healthcare Finder</title>
+    <meta
+      name="description"
+      content="Find healthcare services in Benton County, Oregon with Google Maps Places."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <section class="sidebar">
+        <div class="eyebrow">Benton County, Oregon</div>
+        <h1>Healthcare Finder</h1>
+        <p class="intro">
+          Search for nearby healthcare services with a map, tailored categories,
+          and quick links for directions, websites, and phone numbers.
+        </p>
+
+        <div class="county-card">
+          <div class="county-copy">
+            <strong>Coverage</strong>
+            <span>Focused on providers and services in Benton County.</span>
+          </div>
+          <div class="county-copy">
+            <strong>Default search</strong>
+            <span>Corvallis, OR 97330</span>
+          </div>
+        </div>
+
+        <form id="search-form" class="search-panel">
+          <label class="field">
+            <span>Location</span>
+            <input
+              id="location-input"
+              type="text"
+              name="location"
+              value="97330"
+              placeholder="Enter an address or ZIP code"
+            />
+          </label>
+
+          <label class="field">
+            <span>Healthcare service</span>
+            <select id="service-select" name="service">
+              <option value="primary-care">Primary care</option>
+              <option value="urgent-care">Urgent care</option>
+              <option value="hospital">Hospitals</option>
+              <option value="dentist">Dental care</option>
+              <option value="pharmacy">Pharmacies</option>
+              <option value="mental-health">Mental health</option>
+              <option value="womens-health">Women's health</option>
+              <option value="pediatrics">Pediatrics</option>
+              <option value="physical-therapy">Physical therapy</option>
+              <option value="medical-lab">Medical labs</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Optional keywords</span>
+            <input
+              id="keywords-input"
+              type="text"
+              name="keywords"
+              placeholder="Example: Medicaid, bilingual, sliding scale"
+            />
+          </label>
+
+          <label class="checkbox-row">
+            <input id="open-now-input" type="checkbox" name="open-now" />
+            <span>Open now</span>
+          </label>
+
+          <button id="search-button" class="search-button" type="submit">
+            Search healthcare services
+          </button>
+        </form>
+
+        <div class="chip-group" aria-label="Quick service filters">
+          <button class="chip is-active" data-service="primary-care" type="button">
+            Primary care
+          </button>
+          <button class="chip" data-service="urgent-care" type="button">
+            Urgent care
+          </button>
+          <button class="chip" data-service="mental-health" type="button">
+            Mental health
+          </button>
+          <button class="chip" data-service="pharmacy" type="button">
+            Pharmacies
+          </button>
+        </div>
+
+        <section class="results-panel">
+          <div class="results-header">
+            <div>
+              <p class="results-label">Results</p>
+              <h2 id="results-title">Search Benton County healthcare services</h2>
+            </div>
+            <div id="summary-pill" class="summary-pill">Ready</div>
+          </div>
+
+          <div id="status-message" class="status-message">
+            Enter a location and choose a service type to begin.
+          </div>
+
+          <div id="results-list" class="results-list"></div>
+        </section>
+      </section>
+
+      <section class="map-panel">
+        <div class="map-header">
+          <div>
+            <p class="results-label">Map</p>
+            <h2>Providers and services</h2>
+          </div>
+          <p class="map-note">
+            Uses Google Maps Places data and a Benton County search boundary.
+          </p>
+        </div>
+        <div id="map" class="map" aria-label="Map of healthcare services"></div>
+      </section>
+    </div>
+
+    <script src="./config.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
