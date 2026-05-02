@@ -364,3 +364,327 @@ button:focus {
     min-height: 380px;
   }
 }
+
+
+/* ── Insurance panel ──────────────────────────────────────────── */
+.insurance-panel {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.insurance-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #1e293b;
+}
+
+.insurance-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.insurance-subtitle a {
+  color: #0f766e;
+  text-decoration: underline;
+}
+
+.insurance-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.insurance-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.insurance-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.insurance-card-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.insurance-card-type {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: #d1fae5;
+  color: #065f46;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.insurance-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.insurance-card-issuer {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.insurance-card-link {
+  font-size: 0.8rem;
+  color: #0f766e;
+  text-decoration: underline;
+  margin-top: 0.25rem;
+}
+
+.insurance-empty {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+/* ── Insurance form ───────────────────────────────────────────── */
+#insurance-form-section {
+  margin: 2rem 0;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+#insurance-form-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #0f172a;
+}
+
+.insurance-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.insurance-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.insurance-form-group label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.insurance-form-group input,
+.insurance-form-group select {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: white;
+}
+
+#insurance-search-btn {
+  padding: 8px 20px;
+  background: #0f766e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#insurance-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#insurance-search-btn:hover:not(:disabled) {
+  background: #0d6560;
+}
+
+/* ── Metal level tabs ─────────────────────────────────────────── */
+.metal-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.metal-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s;
+}
+
+.metal-tab.is-active {
+  background: #0f766e;
+  color: white;
+  border-color: #0f766e;
+}
+
+.metal-tab-count {
+  background: rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+}
+
+.metal-tab:not(.is-active) .metal-tab-count {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* ── Metal group visibility ───────────────────────────────────── */
+.metal-group {
+  display: none;
+}
+
+.metal-group.is-active {
+  display: block;
+}
+
+/* ── Metal level badge colors ─────────────────────────────────── */
+.metal-bronze { background: #fef3c7; color: #92400e; }
+.metal-silver { background: #f1f5f9; color: #475569; }
+.metal-gold   { background: #fefce8; color: #854d0e; }
+.metal-platinum { background: #ede9fe; color: #5b21b6; }
+
+#chat-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 12px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+#chat-window {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  width: 340px;
+  height: 480px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+#chat-header {
+  background: #1a73e8;
+  color: white;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+#chat-header button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.message.user {
+  background: #1a73e8;
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.message.bot {
+  background: #f1f3f4;
+  color: #333;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.message.loading {
+  background: #f1f3f4;
+  color: #999;
+  align-self: flex-start;
+}
+
+#chat-input-area {
+  padding: 12px;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 8px;
+}
+
+#chat-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 14px;
+  outline: none;
+}
+
+#chat-input-area button {
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+}
