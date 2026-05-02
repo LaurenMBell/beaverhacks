@@ -188,7 +188,7 @@ async function performSearch({ initial = false } = {}) {
   );
 
   try {
-    const searchOrigin = await resolveSearchOrigin(locationQuery);
+    const searchOrigin = await geocodeLocation(locationQuery);
     state.searchOrigin = searchOrigin.location;
 
     state.map.panTo(searchOrigin.location);
@@ -198,11 +198,14 @@ async function performSearch({ initial = false } = {}) {
     const request = {
       textQuery: buildTextQuery(service.query, locationQuery, keywordQuery),
       fields: [
-        "id",
         "displayName",
         "formattedAddress",
         "location",
+        "googleMapsURI",
+        "websiteURI",
+        "nationalPhoneNumber",
         "rating",
+        "regularOpeningHours",
         "businessStatus",
         "primaryType",
         "primaryTypeDisplayName",
@@ -220,26 +223,7 @@ async function performSearch({ initial = false } = {}) {
     }
 
     const { places = [] } = await Place.searchByText(request);
-    const detailedPlaces = await Promise.all(
-      places.map(async (place) => {
-        try {
-          await place.fetchFields({
-            fields: [
-              "googleMapsURI",
-              "websiteURI",
-              "nationalPhoneNumber",
-              "regularOpeningHours",
-            ],
-          });
-        } catch (detailError) {
-          console.warn("Place details fetch failed for result:", detailError);
-        }
-
-        return place;
-      })
-    );
-
-    const results = detailedPlaces
+    const results = places
       .map((place) => normalizePlace(place, searchOrigin.formattedAddress))
       .filter((place) => place.location && isWithinCountyBoundary(place.location))
       .sort((left, right) => left.distanceMeters - right.distanceMeters);
@@ -252,7 +236,7 @@ async function performSearch({ initial = false } = {}) {
     clearMarkers();
     elements.resultsList.innerHTML = "";
     updateStatus(
-      buildSearchFailureMessage(error),
+      "The search could not be completed. Check the location entry or your Google Maps setup and try again.",
       "Search failed"
     );
   } finally {
@@ -276,16 +260,13 @@ function normalizePlace(place, searchAddress) {
   const distanceMeters = location
     ? calculateDistanceMeters(state.searchOrigin, location)
     : Number.POSITIVE_INFINITY;
-  const openingHours = place.regularOpeningHours?.weekdayDescriptions;
 
   return {
     address: place.formattedAddress || "Address not provided",
     distanceMeters,
     googleMapsUri: place.googleMapsURI || "",
     hours:
-      (Array.isArray(openingHours) && openingHours.length
-        ? openingHours.join(" • ")
-        : null) ||
+      place.regularOpeningHours?.weekdayDescriptions?.[0] ||
       "Hours not available",
     location,
     name: place.displayName || "Healthcare service",
@@ -453,28 +434,6 @@ function renderMapSetupMessage(customMessage) {
   `;
 }
 
-function buildSearchFailureMessage(error) {
-  const message = typeof error?.message === "string" ? error.message : "";
-
-  if (message.includes("ApiNotActivatedMapError")) {
-    return "Google Maps loaded, but the required Places service is not activated for this project. Enable Places API (New) in Google Cloud and try again.";
-  }
-
-  if (message.includes("RefererNotAllowedMapError")) {
-    return "This API key is blocked by its HTTP referrer restrictions. Add your local URL, like http://localhost:4173/*, in Google Cloud.";
-  }
-
-  if (message.includes("REQUEST_DENIED") || message.includes("PERMISSION_DENIED")) {
-    return `Google denied the Places request. Confirm that Places API (New) is enabled, billing is active, and the key is allowed to use Places. Raw error: ${message}`;
-  }
-
-  if (message) {
-    return `Search failed: ${message}`;
-  }
-
-  return "The search could not be completed. Check the location entry or your Google Maps setup and try again.";
-}
-
 function drawCountyBoundaryHint() {
   new google.maps.Circle({
     map: state.map,
@@ -504,27 +463,6 @@ async function geocodeLocation(query) {
     formattedAddress: topResult.formatted_address,
     location: topResult.geometry.location.toJSON(),
   };
-}
-
-async function resolveSearchOrigin(query) {
-  try {
-    return await geocodeLocation(query);
-  } catch (error) {
-    const message = typeof error?.message === "string" ? error.message : "";
-
-    if (
-      message.includes("REQUEST_DENIED") ||
-      message.includes("The webpage is not allowed to use the geocoder")
-    ) {
-      console.warn("Geocoder unavailable, falling back to county center:", error);
-      return {
-        formattedAddress: `${query} (search biased from ${COUNTY.fallbackLocationLabel})`,
-        location: COUNTY.center,
-      };
-    }
-
-    throw error;
-  }
 }
 
 function isWithinCountyBoundary(location) {
