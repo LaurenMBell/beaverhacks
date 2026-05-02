@@ -19,8 +19,13 @@
   <body>
     <div class="shell">
       <section class="sidebar">
-        <div class="eyebrow">Benton County, Oregon</div>
-        <h1>Healthcare Finder</h1>
+        <div class="sidebar-header">
+          <div>
+            <div class="eyebrow">Benton County, Oregon</div>
+            <h1>Healthcare Finder</h1>
+          </div>
+          <div class="sidebar-mark" aria-hidden="true">+</div>
+        </div>
 
         <div class="service-picker">
           <p class="service-picker-label">Healthcare services</p>
@@ -143,12 +148,12 @@
     <script type="module" src="./app.js"></script>
 
     <!-- Chat bubble button -->
-    <button id="chat-toggle" onclick="toggleChat()">💬 Get Advice From AI</button>
+    <button id="chat-toggle" onclick="toggleChat()">Get Advice From AI</button>
 
     <!-- Chat window -->
     <div id="chat-window" style="display:none">
       <div id="chat-header">
-        <span>🏥 Healthcare Assistant</span>
+        <span>Healthcare Assistant</span>
         <button onclick="toggleChat()">✕</button>
       </div>
       <div id="chat-messages"></div>

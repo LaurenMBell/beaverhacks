@@ -667,7 +667,7 @@ function toggleChat() {
   win.style.display = isHidden ? 'flex' : 'none';
 
   if (isHidden && chatHistory.length === 0) {
-    addMessage('bot', 'Hi! Describe your symptoms and I\'ll suggest what type of doctor to see and help you find affordable care nearby. 🏥');
+    addMessage('bot', 'Hi! Describe your symptoms and I\'ll suggest what type of doctor to see and help you find affordable care nearby.');
   }
 }
 
@@ -785,7 +785,7 @@ function autoSearchFromReply(reply) {
     syncActiveChips();
     performSearch();
 
-    addMessage('bot', `🔍 I found nearby ${found}s for you!`);
+    addMessage('bot', `I found nearby ${found}s for you!`);
   }
 }
 
