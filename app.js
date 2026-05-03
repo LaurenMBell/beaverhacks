@@ -178,6 +178,25 @@ async function initMapExperience() {
   );
 
   await performSearch({ initial: true });
+  await initAutocomplete();
+}
+
+async function initAutocomplete() {
+  const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
+
+  const autocomplete = new PlaceAutocompleteElement({
+    componentRestrictions: { country: "us" },
+  });
+
+  // Replace the input with the autocomplete element
+  elements.locationInput.replaceWith(autocomplete);
+  elements.locationInput = autocomplete;
+
+  autocomplete.addEventListener("gmp-placeselect", async (event) => {
+    const place = event.placePrediction.toPlace();
+    await place.fetchFields({ fields: ["location"] });
+    state.routeOrigin = place.location;
+  });
 }
 
 async function performSearch({ initial = false } = {}) {
@@ -198,10 +217,11 @@ async function performSearch({ initial = false } = {}) {
   );
 
   try {
-    const searchOrigin = await resolveSearchOrigin(locationQuery);
-    state.searchOrigin = searchOrigin.location;
-
-    state.map.panTo(searchOrigin.location);
+    // const searchOrigin = await resolveSearchOrigin(locationQuery);
+    // state.searchOrigin = searchOrigin.location;
+    const routeOrigin = await resolveSearchOrigin(locationQuery || COUNTY.fallbackLocationLabel);
+    state.routeOrigin = routeOrigin.location;
+    state.map.panTo(routeOrigin.location);
     state.map.setZoom(11);
 
     const { Place } = await google.maps.importLibrary("places");
@@ -220,7 +240,7 @@ async function performSearch({ initial = false } = {}) {
       language: "en-US",
       region: "us",
       maxResultCount: 15,
-      locationBias: searchOrigin.location,
+      locationBias: state.searchOrigin,
       isOpenNow: openNowOnly || undefined,
     };
 
@@ -244,14 +264,13 @@ async function performSearch({ initial = false } = {}) {
 
     // Normalize and prefilter by county boundary
     let results = detailedPlaces
-      .map((place) => normalizePlace(place, searchOrigin.formattedAddress))
+      .map((place) => normalizePlace(place, routeOrigin.formattedAddress))
       .filter((place) => place.location && isWithinCountyBoundary(place.location));
 
     // Read transport selections
     const transportModeVal = elements.transportationSelect?.value || "drive";
     const maxTravelMinutes = Number(elements.travelTimeSelect?.value) || null;
 
-    // Use the Maps JavaScript DistanceMatrixService to get travel time (avoids CORS).
     const travelModeForMatrix =
       transportModeVal === "walk"
         ? google.maps.TravelMode.WALKING
@@ -281,7 +300,7 @@ async function performSearch({ initial = false } = {}) {
 
     state.results = results;
     renderMarkers(results);
-    renderResults(results, service.label, searchOrigin.formattedAddress, initial);
+    renderResults(results, service.label, routeOrigin.formattedAddress, initial);
   } catch (error) {
     console.error(error);
     clearMarkers();
