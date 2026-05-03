@@ -155,10 +155,10 @@ function bindEvents() {
 function loadGoogleMapsScript() {
   window.initHealthcareFinder = initMapExperience;
 
+  const script = document.createElement("script");
   const apiKey = window.APP_CONFIG?.googleMapsApiKey;
   script.src =
-    `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(a
-    `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsApiKey)}` +
+    `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}` +
     `&v=weekly&libraries=places&callback=initHealthcareFinder`;
   script.async = true;
   script.defer = true;
