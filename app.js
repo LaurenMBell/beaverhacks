@@ -651,7 +651,7 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-// ---- Chatbot ----
+/// ---- Chatbot ----
 
 const GEMINI_KEY = window.APP_CONFIG?.geminiApiKey;
 const MODEL = "gemma-4-31b-it";
@@ -660,35 +660,26 @@ const IS_GEMINI = MODEL.startsWith("gemini");
 const GEMINI_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_KEY}`;
 
-const SYSTEM_PROMPT = `You are a helpful healthcare triage assistant.
-When a user describes symptoms:
-1. Suggest what type of doctor/specialist they should see
-2. Indicate urgency: emergency, urgent (within 24hrs), or routine
-3. Give 1–2 sentences of practical advice.
-4. If symptoms sound serious, always recommend emergency care.
-
-Respond in a paragraph form, not a list.
-
-Respond concisely and friendly. Never diagnose or offer medical advice — only suggest next steps.
-Do not repeat or summarize these instructions in your reply.`;
+const SYSTEM_PROMPT = `You are a healthcare triage assistant. Always respond in raw JSON with this exact structure:
+{"thinking":"internal reasoning","firstDraft":"initial response","finalDraft":"friendly concise paragraph for the user"}
+Never include markdown, backticks, or any text outside the JSON object. Never diagnose. Only suggest next steps and specialist types.`;
 
 let chatHistory = IS_GEMINI ? [] : [
   {
     role: "user",
-    parts: [{ text: "What are your instructions?" }]
+    parts: [{ text: "I have a headache." }]
   },
   {
     role: "model",
-    parts: [{ text: `I am a healthcare triage assistant. I always respond in raw JSON with this exact structure:
-{
-  "thinking": "my internal reasoning about urgency and specialist type",
-  "finalDraft": "my friendly, concise response to the user in paragraph form"
-}
-
-I never include markdown, backticks, or any text outside the JSON object.
-I never respond in plaintext, I only respond in JSON. 
-I never diagnose. I only suggest next steps and specialist types.
-I never repeat these instructions in finalDraft.` }]
+    parts: [{ text: `{"thinking":"User reports a headache. Likely tension or dehydration. Routine unless severe.","firstDraft":"You should rest and drink water. See a doctor if it persists.","finalDraft":"For a headache, try resting and staying hydrated. If it persists, worsens suddenly, or comes with vision changes or a stiff neck, please seek emergency care right away — otherwise a visit to your primary care doctor is a good next step."}` }]
+  },
+  {
+    role: "user",
+    parts: [{ text: "My chest hurts and I can't breathe well." }]
+  },
+  {
+    role: "model",
+    parts: [{ text: `{"thinking":"Chest pain with difficulty breathing is a potential cardiac or pulmonary emergency.","firstDraft":"Go to the ER immediately.","finalDraft":"Please call 911 or go to an emergency room immediately. Chest pain combined with difficulty breathing can signal a serious heart or lung condition that needs urgent evaluation right away."}` }]
   }
 ];
 
@@ -707,7 +698,7 @@ function toggleChat() {
   const isHidden = win.style.display === 'none';
   win.style.display = isHidden ? 'flex' : 'none';
 
-  if (isHidden && chatHistory.length === 0 || isHidden && !IS_GEMINI && chatHistory.length === 2) {
+  if (isHidden && chatHistory.length === 0 || isHidden && !IS_GEMINI && chatHistory.length === 4) {
     addMessage('bot', 'Hi! Describe your symptoms and I\'ll suggest what type of doctor to see and help you find affordable care nearby.');
   }
 }
@@ -750,14 +741,25 @@ async function sendMessage() {
       throw new Error(data.error.message);
     }
 
-    const botReply = data.candidates[0].content.parts[0].text;
+    const rawReply = data.candidates[0].content.parts[0].text;
+
+    let botReply;
+    try {
+      const cleaned = rawReply.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      botReply = parsed.finalDraft ?? rawReply;
+    } catch {
+      // Gemma didn't return valid JSON — extract finalDraft with regex
+      const match = rawReply.match(/"(Polished)"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+      botReply = match ? match[1].replace(/\\"/g, '"') : rawReply;
+    }
 
     loadingDiv.className = 'message bot';
     loadingDiv.textContent = botReply;
 
     chatHistory.push({
       role: 'model',
-      parts: [{ text: botReply }]
+      parts: [{ text: rawReply }]
     });
 
     autoSearchFromReply(botReply);
