@@ -31,3 +31,5 @@ python3 -m http.server 4173
 - This app is client-side only, so your API key should be restricted by HTTP referrer in Google Cloud.
 - Search is tuned for Benton County by combining Google Places text search with a Benton County geographic filter.
 - The UI defaults to Corvallis and works well for nearby communities such as Philomath, Alsea, Monroe, Adair Village, and North Albany-area searches.
+- There were issues with github pushing so we have another repository with full working code, go here to check it out: https://github.com/AngelaALdu/Beaverhacks2026.git
+- 
