@@ -73,6 +73,7 @@ const state = {
   results: [],
   searchOrigin: COUNTY.center,
   activeView: "results",
+  selectedServices: new Set(["primary-care"]),
 };
 
 const elements = {
@@ -87,7 +88,6 @@ const elements = {
   resultsTitle: document.querySelector("#results-title"),
   searchButton: document.querySelector("#search-button"),
   searchForm: document.querySelector("#search-form"),
-  serviceSelect: document.querySelector("#service-select"),
   statusMessage: document.querySelector("#status-message"),
   summaryPill: document.querySelector("#summary-pill"),
   viewToggle: document.querySelector("#view-toggle"),
@@ -99,6 +99,7 @@ bootstrap();
 
 function bootstrap() {
   bindEvents();
+  syncActiveChips();
   setActiveView(state.activeView);
 
   if (!googleMapsApiKey || googleMapsApiKey === "YOUR_GOOGLE_MAPS_API_KEY") {
@@ -126,14 +127,13 @@ function bindEvents() {
   elements.chips.forEach((chip) => {
     chip.addEventListener("click", async () => {
       const { service } = chip.dataset;
-      elements.serviceSelect.value = service;
-      syncActiveChip(service);
-      await performSearch();
-    });
-  });
+      toggleService(service);
+      syncActiveChips();
 
-  elements.serviceSelect.addEventListener("change", () => {
-    syncActiveChip(elements.serviceSelect.value);
+      if (state.geocoder) {
+        await performSearch();
+      }
+    });
   });
 }
 
@@ -175,20 +175,27 @@ async function performSearch({ initial = false } = {}) {
     return;
   }
 
-  const service = HEALTHCARE_SERVICES[elements.serviceSelect.value];
+  const selectedServiceKeys = [...state.selectedServices];
+  if (!selectedServiceKeys.length) {
+    updateStatus("Choose at least one healthcare service to search.", "Select service");
+    return;
+  }
+
+  const selectedServices = selectedServiceKeys.map((key) => HEALTHCARE_SERVICES[key]);
   const locationQuery =
     elements.locationInput.value.trim() || COUNTY.fallbackLocationLabel;
   const keywordQuery = elements.keywordsInput.value.trim();
   const openNowOnly = elements.openNowInput.checked;
+  const serviceLabels = selectedServices.map((service) => service.label);
 
-  setLoading(true, service.label);
+  setLoading(true, buildServiceSummary(serviceLabels));
   updateStatus(
-    `Searching for ${service.label.toLowerCase()} in ${COUNTY.label}...`,
+    `Searching for ${buildServiceSummary(serviceLabels).toLowerCase()} in ${COUNTY.label}...`,
     "Searching"
   );
 
   try {
-    const searchOrigin = await geocodeLocation(locationQuery);
+    const searchOrigin = await resolveSearchOrigin(locationQuery);
     state.searchOrigin = searchOrigin.location;
 
     if (state.map) {
@@ -197,44 +204,68 @@ async function performSearch({ initial = false } = {}) {
     }
 
     const { Place } = await google.maps.importLibrary("places");
-    const request = {
-      textQuery: buildTextQuery(service.query, locationQuery, keywordQuery),
-      fields: [
-        "displayName",
-        "formattedAddress",
-        "location",
-        "googleMapsURI",
-        "websiteURI",
-        "nationalPhoneNumber",
-        "rating",
-        "regularOpeningHours",
-        "businessStatus",
-        "primaryType",
-        "primaryTypeDisplayName",
-      ],
-      language: "en-US",
-      region: "us",
-      maxResultCount: 15,
-      locationBias: searchOrigin.location,
-      isOpenNow: openNowOnly || undefined,
-    };
+    const placesByService = await Promise.all(
+      selectedServices.map(async (service) => {
+        const request = {
+          textQuery: buildTextQuery(service.query, locationQuery, keywordQuery),
+          fields: [
+            "displayName",
+            "formattedAddress",
+            "location",
+            "googleMapsURI",
+            "websiteURI",
+            "nationalPhoneNumber",
+            "rating",
+            "regularOpeningHours",
+            "businessStatus",
+            "primaryType",
+            "primaryTypeDisplayName",
+          ],
+          language: "en-US",
+          region: "us",
+          maxResultCount: 12,
+          locationBias: searchOrigin.location,
+          isOpenNow: openNowOnly || undefined,
+        };
 
-    if (service.includedType) {
-      request.includedType = service.includedType;
-      request.useStrictTypeFiltering = service.strictTypeFiltering;
-    }
+        if (service.includedType) {
+          request.includedType = service.includedType;
+          request.useStrictTypeFiltering = service.strictTypeFiltering;
+        }
 
-    const { places = [] } = await Place.searchByText(request);
-    const results = places
+        const { places = [] } = await Place.searchByText(request);
+        return places;
+      })
+    );
+
+    const dedupedResults = new Map();
+    placesByService
+      .flat()
       .map((place) => normalizePlace(place, searchOrigin.formattedAddress))
       .filter((place) => place.location && isWithinCountyBoundary(place.location))
-      .sort((left, right) => left.distanceMeters - right.distanceMeters);
+      .forEach((place) => {
+        const key = place.googleMapsUri || `${place.name}|${place.address}`;
+        const existing = dedupedResults.get(key);
+
+        if (!existing || place.distanceMeters < existing.distanceMeters) {
+          dedupedResults.set(key, place);
+        }
+      });
+
+    const results = [...dedupedResults.values()].sort(
+      (left, right) => left.distanceMeters - right.distanceMeters
+    );
 
     state.results = results;
     if (state.map) {
       renderMarkers(results);
     }
-    renderResults(results, service.label, searchOrigin.formattedAddress, initial);
+    renderResults(
+      results,
+      buildServiceSummary(serviceLabels),
+      searchOrigin.formattedAddress,
+      initial
+    );
   } catch (error) {
     console.error(error);
     clearMarkers();
@@ -244,7 +275,7 @@ async function performSearch({ initial = false } = {}) {
       "Search failed"
     );
   } finally {
-    setLoading(false, service.label);
+    setLoading(false, buildServiceSummary(serviceLabels));
   }
 }
 
@@ -412,10 +443,23 @@ function clearMarkers() {
   state.markers = [];
 }
 
-function syncActiveChip(service) {
+function syncActiveChips() {
   elements.chips.forEach((chip) => {
-    chip.classList.toggle("is-active", chip.dataset.service === service);
+    chip.classList.toggle("is-active", state.selectedServices.has(chip.dataset.service));
   });
+}
+
+function toggleService(service) {
+  if (state.selectedServices.has(service)) {
+    if (state.selectedServices.size === 1) {
+      return;
+    }
+
+    state.selectedServices.delete(service);
+    return;
+  }
+
+  state.selectedServices.add(service);
 }
 
 function setLoading(isLoading, serviceLabel) {
@@ -538,6 +582,27 @@ async function geocodeLocation(query) {
   };
 }
 
+async function resolveSearchOrigin(query) {
+  try {
+    return await geocodeLocation(query);
+  } catch (error) {
+    const message = typeof error?.message === "string" ? error.message : "";
+
+    if (
+      message.includes("REQUEST_DENIED") ||
+      message.includes("The webpage is not allowed to use the geocoder")
+    ) {
+      console.warn("Geocoder unavailable, falling back to county center:", error);
+      return {
+        formattedAddress: `${query} (search biased from ${COUNTY.fallbackLocationLabel})`,
+        location: COUNTY.center,
+      };
+    }
+
+    throw error;
+  }
+}
+
 function isWithinCountyBoundary(location) {
   return calculateDistanceMeters(COUNTY.center, location) <= COUNTY.radiusMeters;
 }
@@ -565,6 +630,18 @@ function formatMiles(distanceMeters) {
   return `${(distanceMeters * 0.000621371).toFixed(1)} mi`;
 }
 
+function buildServiceSummary(labels) {
+  if (labels.length === 1) {
+    return labels[0];
+  }
+
+  if (labels.length === 2) {
+    return `${labels[0]} and ${labels[1]}`;
+  }
+
+  return `${labels.slice(0, -1).join(", ")}, and ${labels.at(-1)}`;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -590,7 +667,7 @@ function toggleChat() {
   win.style.display = isHidden ? 'flex' : 'none';
 
   if (isHidden && chatHistory.length === 0) {
-    addMessage('bot', 'Hi! Describe your symptoms and I\'ll suggest what type of doctor to see and help you find affordable care nearby. 🏥');
+    addMessage('bot', 'Hi! Describe your symptoms and I\'ll suggest what type of doctor to see and help you find affordable care nearby.');
   }
 }
 
@@ -704,15 +781,11 @@ function autoSearchFromReply(reply) {
 
   if (found) {
     const mapped = specialtyMap[found];
-
-    // ✅ use your actual dropdown
-    elements.serviceSelect.value = mapped;
-
-    // update UI + search
-    syncActiveChip(mapped);
+    state.selectedServices = new Set([mapped]);
+    syncActiveChips();
     performSearch();
 
-    addMessage('bot', `🔍 I found nearby ${found}s for you!`);
+    addMessage('bot', `I found nearby ${found}s for you!`);
   }
 }
 
