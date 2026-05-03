@@ -95,6 +95,14 @@ const elements = {
 
 const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey;
 
+// At the top of app.js, before bootstrap()
+async function loadConfig() {
+  const res = await fetch('/api/config');
+  window.APP_CONFIG = await res.json();
+}
+
+await loadConfig();
+
 bootstrap();
 
 function bootstrap() {
