@@ -82,6 +82,8 @@ const elements = {
   map: document.querySelector("#map"),
   mapView: document.querySelector("#map-view"),
   openNowInput: document.querySelector("#open-now-input"),
+  transportationSelect: document.querySelector("#transportation-select"),
+  travelTimeSelect: document.querySelector("#travel-time"),
   resultsList: document.querySelector("#results-list"),
   // ADD THESE:
   insuranceZip: document.querySelector("#insurance-zip"),
@@ -146,6 +148,13 @@ function bindEvents() {
   });
 
   bindInsuranceForm(); // <-- add this line
+  elements.transportationSelect?.addEventListener("change", async () => {
+    await performSearch();
+  });
+
+  elements.travelTimeSelect?.addEventListener("change", async () => {
+    await performSearch();
+  });
 }
 
 function loadGoogleMapsScript() {
@@ -154,7 +163,7 @@ function loadGoogleMapsScript() {
   const script = document.createElement("script");
   script.src =
     `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsApiKey)}` +
-    `&v=weekly&libraries=places&callback=initHealthcareFinder`;
+    `&v=weekly&libraries=places,routes&callback=initHealthcareFinder`;
   script.async = true;
   script.defer = true;
   script.onerror = () => {
@@ -179,6 +188,25 @@ async function initMapExperience() {
   );
 
   await performSearch({ initial: true });
+  await initAutocomplete();
+}
+
+async function initAutocomplete() {
+  const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
+
+  const autocomplete = new PlaceAutocompleteElement({
+    componentRestrictions: { country: "us" },
+  });
+
+  // Replace the input with the autocomplete element
+  elements.locationInput.replaceWith(autocomplete);
+  elements.locationInput = autocomplete;
+
+  autocomplete.addEventListener("gmp-placeselect", async (event) => {
+    const place = event.placePrediction.toPlace();
+    await place.fetchFields({ fields: ["location"] });
+    state.routeOrigin = place.location;
+  });
 }
 
 
@@ -188,8 +216,7 @@ async function performSearch({ initial = false } = {}) {
   }
 
   const service = HEALTHCARE_SERVICES[elements.serviceSelect.value];
-  const locationQuery =
-    elements.locationInput.value.trim() || COUNTY.fallbackLocationLabel;
+  const locationQuery  = getLocationQuery();
   const keywordQuery = elements.keywordsInput.value.trim();
   const openNowOnly = elements.openNowInput.checked;
 
@@ -200,53 +227,105 @@ async function performSearch({ initial = false } = {}) {
   );
 
   try {
-    const searchOrigin = await geocodeLocation(locationQuery);
-    state.searchOrigin = searchOrigin.location;
+    // const searchOrigin = await resolveSearchOrigin(locationQuery);
+    // state.searchOrigin = searchOrigin.location;
+    const routeOrigin = await resolveSearchOrigin(locationQuery || COUNTY.fallbackLocationLabel);
+state.routeOrigin = routeOrigin.location;
+state.searchOrigin = routeOrigin.location;
 
-    if (state.map) {
-      state.map.panTo(searchOrigin.location);
-      state.map.setZoom(11);
+if (state.map) {
+  state.map.panTo(routeOrigin.location);
+  state.map.setZoom(11);
+}
+
+const { Place } = await google.maps.importLibrary("places");
+const request = {
+  textQuery: buildTextQuery(service.query, locationQuery, keywordQuery),
+  fields: [
+    "id",
+    "displayName",
+    "formattedAddress",
+    "location",
+    "rating",
+    "businessStatus",
+    "primaryType",
+    "primaryTypeDisplayName",
+  ],
+  language: "en-US",
+  region: "us",
+  maxResultCount: 15,
+  locationBias: routeOrigin.location,
+  isOpenNow: openNowOnly || undefined,
+};
+
+if (service.includedType) {
+  request.includedType = service.includedType;
+  request.useStrictTypeFiltering = service.strictTypeFiltering;
+}
+
+const { places = [] } = await Place.searchByText(request);
+
+const detailedPlaces = await Promise.all(
+  places.map(async (place) => {
+    try {
+      await fetchPlaceDetails(place);
+    } catch (detailError) {
+      console.warn("Place details fetch failed for result:", detailError);
     }
+    return place;
+  })
+);
 
-    const { Place } = await google.maps.importLibrary("places");
-    const request = {
-      textQuery: buildTextQuery(service.query, locationQuery, keywordQuery),
-      fields: [
-        "displayName",
-        "formattedAddress",
-        "location",
-        "googleMapsURI",
-        "websiteURI",
-        "nationalPhoneNumber",
-        "rating",
-        "regularOpeningHours",
-        "businessStatus",
-        "primaryType",
-        "primaryTypeDisplayName",
-      ],
-      language: "en-US",
-      region: "us",
-      maxResultCount: 15,
-      locationBias: searchOrigin.location,
-      isOpenNow: openNowOnly || undefined,
-    };
+let results = detailedPlaces
+  .map((place) => normalizePlace(place, routeOrigin.formattedAddress))
+  .filter((place) => place.location && isWithinCountyBoundary(place.location));
 
-    if (service.includedType) {
-      request.includedType = service.includedType;
-      request.useStrictTypeFiltering = service.strictTypeFiltering;
-    }
+const transportModeVal = elements.transportationSelect?.value || "drive";
+const maxTravelMinutes = Number(elements.travelTimeSelect?.value) || null;
 
-    const { places = [] } = await Place.searchByText(request);
-    const results = places
-      .map((place) => normalizePlace(place, searchOrigin.formattedAddress))
-      .filter((place) => place.location && isWithinCountyBoundary(place.location))
-      .sort((left, right) => left.distanceMeters - right.distanceMeters);
+if (results.length) {
+  await computeRouteMatrixForResults(results, transportModeVal);
+}
 
-    state.results = results;
-    if (state.map) {
-      renderMarkers(results);
-    }
-    renderResults(results, service.label, searchOrigin.formattedAddress, initial);
+if (Number.isFinite(maxTravelMinutes) && maxTravelMinutes > 0) {
+  const maxSeconds = maxTravelMinutes * 60;
+  results = results.filter(
+    (place) => (place.travelTimeSeconds ?? Number.POSITIVE_INFINITY) <= maxSeconds
+  );
+}
+
+results.sort((left, right) => {
+  if (Number.isFinite(maxTravelMinutes) && maxTravelMinutes > 0) {
+    return (
+      (left.travelTimeSeconds || Number.POSITIVE_INFINITY) -
+      (right.travelTimeSeconds || Number.POSITIVE_INFINITY)
+    );
+  }
+
+  return left.distanceMeters - right.distanceMeters;
+});
+
+state.results = results;
+
+if (state.map) {
+  renderMarkers(results);
+}
+
+renderResults(results, service.label, routeOrigin.formattedAddress, initial);
+
+if (results.length) {
+  try {
+    const zip = resolveZipFromLocation(locationQuery);
+    const plans = await fetchInsurancePlans(zip);
+    renderInsurancePanel(plans);
+  } catch (err) {
+    console.warn("Insurance plan fetch failed:", err);
+    document.getElementById("insurance-panel")?.remove();
+  }
+} else {
+  document.getElementById("insurance-panel")?.remove();
+}
+
 
 // Inside performSearch, where it handles insurance:
   if (results.length) {
@@ -268,14 +347,15 @@ async function performSearch({ initial = false } = {}) {
   } else {
       document.getElementById("insurance-panel")?.remove();
     }
-
+    renderMarkers(results);
+    renderResults(results, service.label, routeOrigin.formattedAddress, initial);
   } catch (error) {
     console.error(error);
     clearMarkers();
     elements.resultsList.innerHTML = "";
     document.getElementById("insurance-panel")?.remove();
     updateStatus(
-      "The search could not be completed. Check the location entry or your Google Maps setup and try again.",
+      buildSearchFailureMessage(error),
       "Search failed"
     );
   } finally {
@@ -299,21 +379,24 @@ function normalizePlace(place, searchAddress) {
   const distanceMeters = location
     ? calculateDistanceMeters(state.searchOrigin, location)
     : Number.POSITIVE_INFINITY;
+  const openingHours = place.regularOpeningHours?.weekdayDescriptions;
 
   return {
     address: place.formattedAddress || "Address not provided",
     distanceMeters,
-    googleMapsUri: place.googleMapsURI || "",
+    googleMapsLinks: place.googleMapsLinks || place.googleMapsLinks || "",
     hours:
-      place.regularOpeningHours?.weekdayDescriptions?.[0] ||
+      (Array.isArray(openingHours) && openingHours.length
+        ? openingHours.join(" • ")
+        : null) ||
       "Hours not available",
     location,
-    name: place.displayName || "Healthcare service",
+    name: place.name || "Healthcare service",
     phone: place.nationalPhoneNumber || "",
     rating: typeof place.rating === "number" ? place.rating : null,
     searchAddress,
     serviceType: place.primaryTypeDisplayName || place.primaryType || "Healthcare",
-    websiteUri: place.websiteURI || "",
+    websiteURI: place.websiteURI || place.websiteURI || "",
   };
 }
 
@@ -337,11 +420,11 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
   elements.resultsList.innerHTML = results
     .map((result, index) => {
       const actions = [
-        result.googleMapsUri
-          ? `<a href="${result.googleMapsUri}" target="_blank" rel="noreferrer">Directions</a>`
+        result.googleMapsLinks
+          ? `<a href="${result.googleMapsLinks}" target="_blank" rel="noreferrer">Directions</a>`
           : "",
-        result.websiteUri
-          ? `<a href="${result.websiteUri}" target="_blank" rel="noreferrer">Website</a>`
+        result.websiteURI
+          ? `<a href="${result.websiteURI}" target="_blank" rel="noreferrer">Website</a>`
           : "",
         result.phone ? `<a href="tel:${result.phone}">Call</a>` : "",
       ]
@@ -351,6 +434,9 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
       const meta = [
         result.serviceType ? `<span class="meta-pill">${escapeHtml(result.serviceType)}</span>` : "",
         result.rating ? `<span class="meta-pill">Rating ${result.rating.toFixed(1)}</span>` : "",
+        Number.isFinite(result.travelTimeSeconds)
+          ? `<span class="meta-pill">${escapeHtml(formatTravelTime(result.travelTimeSeconds))}</span>`
+          : "",
         Number.isFinite(result.distanceMeters)
           ? `<span class="meta-pill">${formatMiles(result.distanceMeters)} away</span>`
           : "",
@@ -429,8 +515,8 @@ function openInfoWindow(result, marker) {
     `<strong>${escapeHtml(result.name)}</strong>`,
     `<div>${escapeHtml(result.address)}</div>`,
     result.phone ? `<div>${escapeHtml(result.phone)}</div>` : "",
-    result.googleMapsUri
-      ? `<div><a href="${result.googleMapsUri}" target="_blank" rel="noreferrer">Open in Google Maps</a></div>`
+    result.googleMapsLinks
+      ? `<div><a href="${result.googleMapsLinks}" target="_blank" rel="noreferrer">Open in Google Maps</a></div>`
       : "",
   ]
     .filter(Boolean)
@@ -535,6 +621,28 @@ function nextFrame() {
     window.requestAnimationFrame(() => resolve());
   });
 }
+function buildSearchFailureMessage(error) {
+  const message = typeof error?.message === "string" ? error.message : "";
+
+  if (message.includes("ApiNotActivatedMapError")) {
+    return "Google Maps loaded, but the required Places service is not activated for this project. Enable Places API (New) in Google Cloud and try again.";
+  }
+
+  if (message.includes("RefererNotAllowedMapError")) {
+    return "This API key is blocked by its HTTP referrer restrictions. Add your local URL, like http://localhost:4173/*, in Google Cloud.";
+  }
+
+  if (message.includes("REQUEST_DENIED") || message.includes("PERMISSION_DENIED")) {
+    return `Google denied the Places request. Confirm that Places API (New) is enabled, billing is active, and the key is allowed to use Places. Raw error: ${message}`;
+  }
+
+  if (message) {
+    return `Search failed: ${message}`;
+  }
+
+  return "The search could not be completed. Check the location entry or your Google Maps setup and try again.";
+//>>>>>>> 4446498d8e391af488e4f7b6699115b2a8244cb6
+}
 
 function drawCountyBoundaryHint() {
   if (state.mapCircle) {
@@ -571,6 +679,27 @@ async function geocodeLocation(query) {
   };
 }
 
+async function resolveSearchOrigin(query) {
+  try {
+    return await geocodeLocation(query);
+  } catch (error) {
+    const message = typeof error?.message === "string" ? error.message : "";
+
+    if (
+      message.includes("REQUEST_DENIED") ||
+      message.includes("The webpage is not allowed to use the geocoder")
+    ) {
+      console.warn("Geocoder unavailable, falling back to county center:", error);
+      return {
+        formattedAddress: `${query} (search biased from ${COUNTY.fallbackLocationLabel})`,
+        location: COUNTY.center,
+      };
+    }
+
+    throw error;
+  }
+}
+
 function isWithinCountyBoundary(location) {
   return calculateDistanceMeters(COUNTY.center, location) <= COUNTY.radiusMeters;
 }
@@ -597,6 +726,89 @@ function degreesToRadians(value) {
 function formatMiles(distanceMeters) {
   return `${(distanceMeters * 0.000621371).toFixed(1)} mi`;
 }
+
+function formatTravelTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds === Number.POSITIVE_INFINITY) return "Time unavailable";
+  const mins = Math.round(seconds / 60);
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.floor(mins / 60);
+  const remaining = mins % 60;
+  return `${hours} hr${hours > 1 ? "s" : ""}${remaining ? ` ${remaining} min` : ""}`;
+}
+
+async function fetchPlaceDetails(place) {
+  const detailFields = [
+    "googleMapsLinks",
+    "websiteURI",
+    "nationalPhoneNumber",
+    "regularOpeningHours",
+  ];
+
+  if (!place?.fetchFields) return;
+
+  try {
+    await place.fetchFields({ fields: detailFields });
+  } catch (error) {
+    const message = typeof error?.message === "string" ? error.message : "";
+
+    if (message.includes("fields: not iterable") || message.includes("unknown property 0")) {
+      await place.fetchFields(detailFields);
+      return;
+    }
+
+    throw error;
+  }
+}
+
+async function computeRouteMatrixForResults(results, transportModeVal) {
+  const modeMap = {
+    drive: 'DRIVE',
+    walk: 'WALK',
+    bike: 'BICYCLE',
+    transit: 'TRANSIT'
+  };
+
+  const travelMode = modeMap[transportModeVal] ?? 'DRIVE';
+
+  await Promise.all(
+    results.map(async (place) => {
+      try {
+        const response = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': googleMapsApiKey,
+            'X-Goog-FieldMask': 'routes.duration'
+          },
+          body: JSON.stringify({
+            origin: {
+              location: { latLng: { 
+                latitude: state.searchOrigin.lat, 
+                longitude: state.searchOrigin.lng 
+              }}
+            },
+            destination: {
+              location: { latLng: { 
+                latitude: place.location.lat, 
+                longitude: place.location.lng 
+              }}
+            },
+            travelMode,
+          })
+        });
+
+        const data = await response.json();
+        const durationStr = data.routes?.[0]?.duration;
+        place.travelTimeSeconds = durationStr ? parseInt(durationStr) : null;
+      } catch (err) {
+        console.warn('Routes API failed for place:', place.name, err);
+        place.travelTimeSeconds = null;
+      }
+    })
+  );
+}
+
+
 
 function escapeHtml(value) {
   return String(value)
@@ -937,6 +1149,10 @@ function autoSearchFromReply(reply) {
 
     addMessage('bot', `🔍 I found nearby ${found}s for you!`);
   }
+}
+
+function getLocationQuery() {
+  return elements.locationInput.value?.trim?.() || COUNTY.fallbackLocationLabel;
 }
 
 window.toggleChat = toggleChat;
