@@ -1,27 +1,9 @@
-#login-box #guest-login-btn {
-  width: auto;
-  margin: 14px auto 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #0f766e;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
-  display: block;
-}
-
-#login-box #guest-login-btn:hover {
-  color: #115e59;
-  background: transparent;
-}
-
 #login-box {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+
 
   width: 100%;
   max-width: 360px;
@@ -38,6 +20,7 @@
   text-align: center;
 }
 
+
 #login-box input {
   width: 100%;
   box-sizing: border-box;
@@ -48,11 +31,13 @@
   font-size: 15px;
 }
 
+
 #login-box input:focus {
   outline: none;
   border-color: #0f766e;
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
 }
+
 
 #login-box button {
   width: 100%;
@@ -67,17 +52,21 @@
   cursor: pointer;
 }
 
+
 #login-box button:hover {
   background: #115e59;
 }
+
 
 #signup-btn {
   background: #334155;
 }
 
+
 #signup-btn:hover {
   background: #1e293b;
 }
+
 
 #auth-status {
   min-height: 20px;
@@ -87,11 +76,13 @@
   text-align: center;
 }
 
+
 #logout-btn {
   position: fixed;
   top: 7px;
   right: 16px;
   z-index: 1000;
+
 
   padding: 7px 10px;
   border: none;
@@ -102,19 +93,24 @@
   font-weight: 600;
   cursor: pointer;
 
+
 }
+
 
 #logout-btn:hover {
   background: #115e59;
 }
 
+
 #logout-btn {
   display: none;
 }
 
+
 .result-card {
   position: relative;
 }
+
 
 .result-card .fav-btn {
   position: absolute;
@@ -123,10 +119,12 @@
   z-index: 2;
 }
 
+
 :root {
   color-scheme: light;
   --bg: #dfeefa;
-  --panel: rgba(255, 248, 236, 0.94);
+  --panel: #fff8ec;
+  --sidebar: #79a9d1;
   --panel-border: rgba(24, 52, 92, 0.14);
   --text: #16233b;
   --muted: #5b6f88;
@@ -141,9 +139,44 @@
   --radius-md: 10px;
 }
 
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(320px, 430px) 1fr;
+  gap: 0;
+  min-height: 100vh;
+  padding: 0;
+}
+
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 22px;
+  min-height: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+  background: var(--sidebar);
+  color: #f7fbff;
+}
+
+
+.map-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 20px 20px 18px;
+  background: var(--panel);
+}
+
+
+
+
 * {
   box-sizing: border-box;
 }
+
 
 html,
 body {
@@ -154,9 +187,12 @@ body {
   background: var(--bg);
 }
 
+
 body {
   min-height: 100vh;
+  background: var(--bg);
 }
+
 
 .shell {
   display: grid;
@@ -165,6 +201,7 @@ body {
   min-height: calc(100vh - 20px);
   padding: 10px;
 }
+
 
 .sidebar,
 .map-panel {
@@ -176,13 +213,34 @@ body {
   margin-top: 35px;
 }
 
+
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 18px;
+  padding: 24px 22px;
   min-height: 0;
+  background: var(--sidebar);
+  color: #f7fbff;
 }
+
+
+.sidebar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+
+.sidebar-mark {
+  flex: 0 0 auto;
+  font-size: 5rem;
+  line-height: 0.8;
+  font-weight: 800;
+  color: #fdfdfd;
+}
+
 
 .eyebrow,
 .results-label {
@@ -191,8 +249,9 @@ body {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent-strong);
+  color: rgba(247, 251, 255, 0.88);
 }
+
 
 h1,
 h2,
@@ -200,26 +259,46 @@ p {
   margin: 0;
 }
 
+
 h1 {
   font-size: clamp(2.2rem, 4vw, 3.5rem);
   line-height: 0.95;
   letter-spacing: -0.05em;
+  color: #fdfdfd;
 }
+
 
 .map-note,
 .status-message {
   color: var(--muted);
 }
 
+
+.sidebar .field span,
+.sidebar .checkbox-row span {
+  color: #f7fbff;
+}
+
+
+.service-picker-label {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #f7fbff;
+}
+
+
 .search-panel {
   display: grid;
   gap: 10px;
 }
 
+
 .field {
   display: grid;
   gap: 8px;
 }
+
 
 .field span,
 .checkbox-row span {
@@ -227,11 +306,13 @@ h1 {
   font-weight: 700;
 }
 
+
 input,
 select,
 button {
   font: inherit;
 }
+
 
 input,
 select {
@@ -239,9 +320,10 @@ select {
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid rgba(31, 36, 48, 0.12);
-  background: var(--surface-strong);
+  background: rgba(255, 250, 241, 0.98);
   color: var(--text);
 }
+
 
 input:focus,
 select:focus,
@@ -250,17 +332,20 @@ button:focus {
   outline-offset: 1px;
 }
 
+
 .checkbox-row {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
 
+
 .checkbox-row input {
   width: 18px;
   height: 18px;
   margin: 0;
 }
+
 
 .search-button {
   border: 0;
@@ -274,9 +359,11 @@ button:focus {
   box-shadow: 0 14px 32px rgba(26, 53, 93, 0.22);
 }
 
+
 .search-button:hover {
   transform: translateY(-1px);
 }
+
 
 .search-button:disabled {
   cursor: wait;
@@ -284,30 +371,36 @@ button:focus {
   transform: none;
 }
 
+
 .chip-group {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+
 .chip {
   border: 1px solid rgba(31, 36, 48, 0.12);
-  background: var(--accent);
-  color: #f7fbff;
+  background: var(--surface);
+  color: var(--accent-strong);
   border-radius: 999px;
   padding: 10px 14px;
   cursor: pointer;
   transition: filter 180ms ease, transform 180ms ease;
 }
 
+
 .chip:hover {
   filter: brightness(0.98);
 }
 
+
 .chip.is-active {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
+  color: #f7fbff;
 }
+
 
 .map-panel {
   display: flex;
@@ -316,6 +409,7 @@ button:focus {
   padding: 16px;
 }
 
+
 .map-header {
   display: flex;
   justify-content: space-between;
@@ -323,11 +417,13 @@ button:focus {
   align-items: flex-start;
 }
 
+
 .view-controls {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
+
 
 .summary-pill {
   padding: 10px 14px;
@@ -337,6 +433,7 @@ button:focus {
   background: var(--surface);
   color: var(--accent-strong);
 }
+
 
 .view-toggle {
   display: inline-flex;
@@ -350,6 +447,7 @@ button:focus {
   cursor: pointer;
 }
 
+
 .view-toggle-track {
   position: relative;
   width: 52px;
@@ -358,6 +456,7 @@ button:focus {
   background: rgba(121, 169, 209, 0.28);
   flex: 0 0 auto;
 }
+
 
 .view-toggle-thumb {
   position: absolute;
@@ -370,9 +469,11 @@ button:focus {
   transition: transform 180ms ease;
 }
 
+
 .view-toggle.is-map .view-toggle-thumb {
   transform: translateX(22px);
 }
+
 
 .view-toggle-labels {
   display: inline-flex;
@@ -382,42 +483,50 @@ button:focus {
   font-weight: 700;
 }
 
+
 .view-toggle-label {
   color: var(--muted);
   transition: color 180ms ease;
 }
+
 
 .view-toggle.is-map .view-toggle-label-map,
 .view-toggle:not(.is-map) .view-toggle-label-results {
   color: var(--accent-strong);
 }
 
+
 .map-status {
   margin-top: 10px;
 }
+
 
 .view-window {
   flex: 1;
   min-height: 0;
   margin-top: 12px;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  background: var(--surface);
+  background: #fffdf8;
   border: 1px solid rgba(24, 52, 92, 0.08);
 }
+
 
 .panel-view {
   height: 100%;
   min-height: 0;
 }
 
+
 .panel-view[hidden] {
   display: none;
 }
 
+
 .results-view {
   padding: 12px;
 }
+
 
 .results-list {
   display: grid;
@@ -427,17 +536,20 @@ button:focus {
   padding-right: 6px;
 }
 
+
 .result-card {
   padding: 14px;
   border-radius: var(--radius-lg);
-  background: var(--surface-strong);
+  background: #fffaf1;
   border: 1px solid rgba(31, 36, 48, 0.08);
 }
+
 
 .result-card h3 {
   margin: 0;
   font-size: 1.05rem;
 }
+
 
 .result-meta {
   display: flex;
@@ -445,6 +557,7 @@ button:focus {
   gap: 10px;
   margin-top: 10px;
 }
+
 
 .meta-pill {
   display: inline-flex;
@@ -458,12 +571,14 @@ button:focus {
   font-weight: 700;
 }
 
+
 .result-address,
 .result-hours {
   margin-top: 12px;
   line-height: 1.6;
   color: var(--muted);
 }
+
 
 .result-actions {
   display: flex;
@@ -472,15 +587,18 @@ button:focus {
   margin-top: 14px;
 }
 
+
 .result-actions a {
   text-decoration: none;
   color: var(--accent-strong);
   font-weight: 800;
 }
 
+
 .map-view {
   padding: 12px;
 }
+
 
 .map {
   width: 100%;
@@ -490,6 +608,7 @@ button:focus {
   overflow: hidden;
   background: #dcecf7;
 }
+
 
 .map-setup {
   display: grid;
@@ -501,9 +620,11 @@ button:focus {
   line-height: 1.7;
 }
 
+
 .map-setup strong {
   color: var(--text);
 }
+
 
 @media (max-width: 1080px) {
   .shell {
@@ -512,17 +633,18 @@ button:focus {
   }
 }
 
+
 @media (max-width: 680px) {
   .shell {
-    padding: 8px;
-    gap: 8px;
+    gap: 0;
   }
+
 
   .sidebar,
   .map-panel {
     padding: 14px;
-    border-radius: 16px;
   }
+
 
   .map-header,
   .view-controls {
@@ -530,16 +652,285 @@ button:focus {
     align-items: stretch;
   }
 
+
   .map-panel {
     min-height: 520px;
   }
 }
 
+
+
+
+/* ── Insurance panel ──────────────────────────────────────────── */
+.insurance-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #1e293b;
+}
+
+
+.insurance-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+
+.insurance-subtitle a {
+  color: #0f766e;
+  text-decoration: underline;
+}
+
+
+.insurance-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+
+.insurance-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+
+.insurance-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+
+.insurance-card-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+
+.insurance-card-type {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: #d1fae5;
+  color: #065f46;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+
+.insurance-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+
+.insurance-card-issuer {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+
+.insurance-card-link {
+  font-size: 0.8rem;
+  color: #0f766e;
+  text-decoration: underline;
+  margin-top: 0.25rem;
+}
+
+
+.insurance-empty {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+
+/* ── Insurance form ───────────────────────────────────────────── */
+#insurance-form-section {
+  margin: 2rem 0;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+
+#insurance-form-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #0f172a;
+}
+
+
+.insurance-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+
+.insurance-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+
+.insurance-form-group label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+
+.insurance-form-group input,
+.insurance-form-group select {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: white;
+}
+
+
+#insurance-search-btn {
+  padding: 8px 20px;
+  background: #0f766e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+
+#insurance-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+#insurance-search-btn:hover:not(:disabled) {
+  background: #0d6560;
+}
+
+
+/* Ensure the sidebar can actually show everything */
+.sidebar {
+  overflow-y: auto;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+
+/* Make the insurance panel stand out */
+.insurance-panel {
+  display: block !important; /* Force visibility */
+  margin-top: 30px;
+  padding: 20px;
+  background: #ffffff;
+  border: 2px solid #79a9d1;
+  border-radius: 12px;
+  clear: both;
+}
+
+
+/* Individual Plan Cards inside the panel */
+.insurance-card {
+  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border-left: 6px solid #1a355d;
+}
+/* ── Metal level tabs ─────────────────────────────────────────── */
+.metal-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+
+.metal-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s;
+}
+
+
+.metal-tab.is-active {
+  background: #0f766e;
+  color: white;
+  border-color: #0f766e;
+}
+
+
+.metal-tab-count {
+  background: rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+}
+
+
+.metal-tab:not(.is-active) .metal-tab-count {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+
+/* ── Metal group visibility ───────────────────────────────────── */
+.metal-group {
+  display: none;
+}
+
+
+.metal-group.is-active {
+  display: block;
+}
+
+
+/* ── Metal level badge colors ─────────────────────────────────── */
+.metal-bronze { background: #fef3c7; color: #92400e; }
+.metal-silver { background: #f1f5f9; color: #475569; }
+.metal-gold   { background: #fefce8; color: #854d0e; }
+.metal-platinum { background: #ede9fe; color: #5b21b6; }
+
+
 #chat-toggle {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: #1a73e8;
+  background: #1a355d;
   color: white;
   border: none;
   border-radius: 24px;
@@ -549,6 +940,7 @@ button:focus {
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   z-index: 1000;
 }
+
 
 #chat-window {
   position: fixed;
@@ -565,8 +957,9 @@ button:focus {
   overflow: hidden;
 }
 
+
 #chat-header {
-  background: #1a73e8;
+  background: #1a355d;
   color: white;
   padding: 14px 16px;
   display: flex;
@@ -575,6 +968,7 @@ button:focus {
   font-weight: 600;
 }
 
+
 #chat-header button {
   background: none;
   border: none;
@@ -582,6 +976,7 @@ button:focus {
   font-size: 18px;
   cursor: pointer;
 }
+
 
 #chat-messages {
   flex: 1;
@@ -592,6 +987,7 @@ button:focus {
   gap: 10px;
 }
 
+
 .message {
   max-width: 80%;
   padding: 10px 14px;
@@ -600,12 +996,14 @@ button:focus {
   line-height: 1.5;
 }
 
+
 .message.user {
   background: #1a73e8;
   color: white;
   align-self: flex-end;
   border-bottom-right-radius: 4px;
 }
+
 
 .message.bot {
   background: #f1f3f4;
@@ -614,11 +1012,13 @@ button:focus {
   border-bottom-left-radius: 4px;
 }
 
+
 .message.loading {
   background: #f1f3f4;
   color: #999;
   align-self: flex-start;
 }
+
 
 #chat-input-area {
   padding: 12px;
@@ -626,6 +1026,7 @@ button:focus {
   display: flex;
   gap: 8px;
 }
+
 
 #chat-input {
   flex: 1;
@@ -636,8 +1037,9 @@ button:focus {
   outline: none;
 }
 
+
 #chat-input-area button {
-  background: #1a73e8;
+  background: #79a9d1;
   color: white;
   border: none;
   border-radius: 20px;
@@ -645,3 +1047,119 @@ button:focus {
   cursor: pointer;
   font-size: 14px;
 }
+
+
+
+
+/* ── Price comparison ─────────────────────────────────────────── */
+#price-compare-section {
+  margin: 1rem 0;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+
+#price-compare-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+}
+
+
+.price-intro {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+}
+
+
+.price-table {
+  margin-top: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 0.8rem;
+}
+
+
+.price-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  background: #0f766e;
+  color: white;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+
+.price-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  padding: 8px 12px;
+  border-top: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+
+.price-table-row:nth-child(even) {
+  background: #f8fafc;
+}
+
+
+.price-note {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 0.5rem;
+}
+
+
+#price-search-btn {
+  margin-top: 0.5rem;
+  padding: 8px 20px;
+  background: #0f766e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+}
+
+
+#price-search-btn:hover:not(:disabled) {
+  background: #0d6560;
+}
+
+
+#price-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* ── Book button ──────────────────────────────────────────────── */
+.action-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: #0f766e;
+  color: white !important;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none !important;
+  transition: background 0.15s;
+}
+
+
+.action-book:hover {
+  background: #0d6560;
+}
+
+
+
