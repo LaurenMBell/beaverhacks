@@ -22,18 +22,62 @@
         <div id="login-box">
           <h2>Login</h2>
 
+
           <input id="email" type="email" placeholder="Email" />
           <input id="password" type="password" placeholder="Password" />
 
+
           <button id="login-btn">Login</button>
           <button id="signup-btn">Sign Up</button>
-          <button id="guest-login-btn" type="button">Continue as guest</button>
           <button id="logout-btn" style="display:none;">Logout</button>
         <p id="auth-status"></p>
       </div>
       <section class="sidebar">
-        <div class="eyebrow">Benton County, Oregon</div>
-        <h1>Healthcare Finder</h1>
+        <div class="sidebar-header">
+          <div>
+            <div class="eyebrow">Benton County, Oregon</div>
+            <h1>Healthcare Finder</h1>
+          </div>
+          <div class="sidebar-mark" aria-hidden="true">+</div>
+        </div>
+
+
+        <div class="service-picker">
+          <p class="service-picker-label">Healthcare services</p>
+          <div class="chip-group" aria-label="Healthcare service filters">
+            <button class="chip is-active" data-service="primary-care" type="button">
+              Primary care
+            </button>
+            <button class="chip" data-service="urgent-care" type="button">
+              Urgent care
+            </button>
+            <button class="chip" data-service="hospital" type="button">
+              Hospitals
+            </button>
+            <button class="chip" data-service="dentist" type="button">
+              Dental care
+            </button>
+            <button class="chip" data-service="pharmacy" type="button">
+              Pharmacies
+            </button>
+            <button class="chip" data-service="mental-health" type="button">
+              Mental health
+            </button>
+            <button class="chip" data-service="womens-health" type="button">
+              Women's health
+            </button>
+            <button class="chip" data-service="pediatrics" type="button">
+              Pediatrics
+            </button>
+            <button class="chip" data-service="physical-therapy" type="button">
+              Physical therapy
+            </button>
+            <button class="chip" data-service="medical-lab" type="button">
+              Medical labs
+            </button>
+          </div>
+        </div>
+
 
         <form id="search-form" class="search-panel">
           <label class="field">
@@ -46,22 +90,26 @@
               placeholder="Enter an address or ZIP code"
             />
           </label>
-
           <label class="field">
-            <span>Healthcare service</span>
-            <select id="service-select" name="service">
-              <option value="primary-care">Primary care</option>
-              <option value="urgent-care">Urgent care</option>
-              <option value="hospital">Hospitals</option>
-              <option value="dentist">Dental care</option>
-              <option value="pharmacy">Pharmacies</option>
-              <option value="mental-health">Mental health</option>
-              <option value="womens-health">Women's health</option>
-              <option value="pediatrics">Pediatrics</option>
-              <option value="physical-therapy">Physical therapy</option>
-              <option value="medical-lab">Medical labs</option>
+            <span>Mode of Transportation</span>
+            <select id="transportation-select" name="transportation">
+              <option value="drive">Drive</option>
+              <option value="walk">Walk</option>
+              <option value="bike">Bike</option>
             </select>
           </label>
+
+
+          <label class="field">
+            <span>Max Travel Time</span>
+            <select id="travel-time">
+              <option value="">Any</option>
+              <option value="15">15 min</option>
+              <option value="20">20 min</option>
+              <option value="30">30 min</option>
+            </select>
+          </label>
+
 
           <label class="field">
             <span>Optional keywords</span>
@@ -73,21 +121,87 @@
             />
           </label>
 
+
           <label class="checkbox-row">
             <input id="open-now-input" type="checkbox" name="open-now" />
             <span>Open now</span>
           </label>
+
 
           <label class="checkbox-row">
             <input id="favorites-input" type="checkbox" name="favorites" />
             <span>Favorites</span>
           </label>
 
+
           <button id="search-button" class="search-button" type="submit">
             Search healthcare services
           </button>
         </form>
 
+
+        <section id="insurance-form-section">
+          <h2>Find Your Insurance Plans</h2>
+          <form id="insurance-form">
+            <div class="insurance-form-row">
+              <div class="insurance-form-group">
+                <label for="insurance-zip">ZIP Code</label>
+                <input type="text" id="insurance-zip" placeholder="97330" maxlength="5" />
+              </div>
+              <div class="insurance-form-group">
+                <label for="insurance-income">Annual Household Income ($)</label>
+                <input type="number" id="insurance-income" placeholder="40000" min="0" />
+              </div>
+              <div class="insurance-form-group">
+                <label for="insurance-age">Age</label>
+                <input type="number" id="insurance-age" placeholder="30" min="0" max="120" />
+              </div>
+              <div class="insurance-form-group">
+                <label for="insurance-gender">Gender</label>
+                <select id="insurance-gender">
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                </select>
+              </div>
+              <div class="insurance-form-group">
+                <label for="insurance-tobacco">Tobacco user?</label>
+                <select id="insurance-tobacco">
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+              </div>
+            </div>
+          <button type="submit" id="insurance-search-btn">Find Plans</button>
+          </form>
+        </section>
+       
+        <section id="price-form-section" class="price-form-section">
+          <h2>Compare Procedure Prices</h2>
+          <form id="price-form">
+            <label class="field">
+              <span>Procedure</span>
+              <input
+                id="procedure-input"
+                type="text"
+                placeholder="Example: hip replacement, heart failure, pneumonia"
+              />
+            </label>
+
+
+            <button id="price-search-btn" type="submit">
+              Compare Prices
+            </button>
+          </form>
+          <div id="price-results"></div>
+        </section>
+
+
+
+
+      <div class="chip-group" aria-label="Quick service filters">
+
+
+         
         <div class="chip-group" aria-label="Quick service filters">
           <button class="chip is-active" data-service="primary-care" type="button">
             Primary care
@@ -103,6 +217,7 @@
           </button>
         </div>
       </section>
+
 
       <section class="map-panel">
         <div class="map-header">
@@ -151,12 +266,10 @@
         </div>
       </section>
     </div>
-
     <script src="./config.js"></script>
     <script type="module" src="./app.js"></script>
-
-    <!-- Chat bubble button -->
     <button id="chat-toggle" onclick="toggleChat()">💬 Get Advice From AI</button>
+
 
     <!-- Chat window -->
     <div id="chat-window" style="display:none">
@@ -166,15 +279,17 @@
       </div>
       <div id="chat-messages"></div>
       <div id="chat-input-area">
-        <input 
-          type="text" 
-          id="chat-input" 
+        <input
+          type="text"
+          id="chat-input"
           placeholder="Describe your symptoms..."
           onkeypress="if(event.key==='Enter') sendMessage()"
         />
         <button onclick="sendMessage()">Send</button>
       </div>
     </div>
-
   </body>
 </html>
+
+
+
