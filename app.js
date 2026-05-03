@@ -8,6 +8,7 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
+
 import {
   doc,
   setDoc,
@@ -17,12 +18,14 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const status = document.getElementById("auth-status");
 const loginBox = document.getElementById("login-box");
 const logoutButton = document.getElementById("logout-btn")
 const savedFavoriteIds = new Set();
+
 
 // SIGN UP
 document.getElementById("signup-btn").onclick = async () => {
@@ -33,6 +36,7 @@ document.getElementById("signup-btn").onclick = async () => {
     status.textContent = err.message;
   }
 };
+
 
 // LOGIN
 document.getElementById("login-btn").onclick = async () => {
@@ -45,68 +49,41 @@ document.getElementById("login-btn").onclick = async () => {
   }
 };
 
-let isGuest = false;
-// Continue as guest
-document.getElementById("guest-login-btn").onclick = async () => {
-  // Clears favorites from previous login so the favorites don't appear for guest
-  savedFavoriteIds.clear();
-
-  document.querySelectorAll(".fav-btn").forEach((button) => {
-    button.textContent = "🤍";
-  });
-
-
-  logoutButton.style.display = "block";
-  isGuest = true;
-  
-  loginBox.style.display = "none";
-  document.querySelector(".sidebar").style.display = "block";
-  document.querySelector(".map-panel").style.display = "block";
-
-  if (!appStarted) {
-    appStarted = true;
-    bootstrap();
-  }
-};
 
 async function loadFavoritesForUser(user) {
   savedFavoriteIds.clear();
 
+
   const snapshot = await getDocs(collection(db, "users", user.uid, "favorites"));
+
 
   snapshot.forEach((doc) => {
     savedFavoriteIds.add(doc.id);
   });
 }
 
+
 // LOGOUT
 document.getElementById("logout-btn").onclick = async () => {
   email.value = "";
   password.value = "";
   logoutButton.style.display = "none";
-  const sidebar = document.querySelector(".sidebar");
-  const mapPanel = document.querySelector(".map-panel");
-  if(isGuest == true){
-    console.log("here");
-    loginBox.style.display = "block";
-    sidebar.style.display = "none";
-    mapPanel.style.display = "none";
-    logoutButton.style.display = "none";
-    isGuest = false;
-    return;
-  }
   await signOut(auth);
 };
 
+
 let appStarted = false;
+
 
 // forces signout upon refresh of page
 // await signOut(auth);
+
 
 onAuthStateChanged(auth, async (user) => {
   const loginBox = document.getElementById("login-box");
   const sidebar = document.querySelector(".sidebar");
   const mapPanel = document.querySelector(".map-panel");
+
 
   if (user) {
     loginBox.style.display = "none";
@@ -114,7 +91,9 @@ onAuthStateChanged(auth, async (user) => {
     mapPanel.style.display = "block";
     logoutButton.style.display = "block";
 
+
     await loadFavoritesForUser(user);
+
 
     if (!appStarted) {
       appStarted = true;
@@ -131,6 +110,11 @@ onAuthStateChanged(auth, async (user) => {
 
 
 
+
+
+
+
+
 const COUNTY = {
   center: { lat: 44.5646, lng: -123.262 },
   label: "Benton County, Oregon",
@@ -138,64 +122,56 @@ const COUNTY = {
   fallbackLocationLabel: "Corvallis, OR 97330",
 };
 
+
 const HEALTHCARE_SERVICES = {
-  "primary-care": {
-    label: "Primary care",
-    query: "primary care clinic",
-    includedType: "doctor",
-    strictTypeFiltering: false,
-  },
-  "urgent-care": {
-    label: "Urgent care",
-    query: "urgent care",
-    strictTypeFiltering: false,
-  },
-  hospital: {
-    label: "Hospitals",
-    query: "hospital",
-    includedType: "hospital",
-    strictTypeFiltering: true,
-  },
-  dentist: {
-    label: "Dental care",
-    query: "dentist",
-    includedType: "dentist",
-    strictTypeFiltering: true,
-  },
-  pharmacy: {
-    label: "Pharmacies",
-    query: "pharmacy",
-    includedType: "pharmacy",
-    strictTypeFiltering: true,
-  },
-  "mental-health": {
-    label: "Mental health",
-    query: "mental health clinic",
-    strictTypeFiltering: false,
-  },
-  "womens-health": {
-    label: "Women's health",
-    query: "women's health clinic",
-    strictTypeFiltering: false,
-  },
-  pediatrics: {
-    label: "Pediatrics",
-    query: "pediatrician",
-    strictTypeFiltering: false,
-  },
-  "physical-therapy": {
-    label: "Physical therapy",
-    query: "physical therapy",
-    includedType: "physiotherapist",
-    strictTypeFiltering: true,
-  },
-  "medical-lab": {
-    label: "Medical labs",
-    query: "medical lab",
-    includedType: "medical_lab",
-    strictTypeFiltering: true,
-  },
+  "primary-care": { label: "Primary care", query: "primary care clinic", includedType: "doctor", strictTypeFiltering: false },
+  "urgent-care": { label: "Urgent care", query: "urgent care", strictTypeFiltering: false },
+  hospital: { label: "Hospitals", query: "hospital", includedType: "hospital", strictTypeFiltering: true },
+  dentist: { label: "Dental care", query: "dentist", includedType: "dentist", strictTypeFiltering: true },
+  pharmacy: { label: "Pharmacies", query: "pharmacy", includedType: "pharmacy", strictTypeFiltering: true },
+  "mental-health": { label: "Mental health", query: "mental health clinic", strictTypeFiltering: false },
+  "womens-health": { label: "Women's health", query: "women's health clinic", strictTypeFiltering: false },
+  pediatrics: { label: "Pediatrics", query: "pediatrician", strictTypeFiltering: false },
+  "physical-therapy": { label: "Physical therapy", query: "physical therapy", includedType: "physiotherapist", strictTypeFiltering: true },
+  "medical-lab": { label: "Medical labs", query: "medical lab", includedType: "medical_lab", strictTypeFiltering: true },
 };
+
+
+async function loadConfig() {
+  if (window.APP_CONFIG?.googleMapsApiKey) return;
+
+
+  try {
+    const res = await fetch("/config.json");
+    if (res.ok) {
+      window.APP_CONFIG = await res.json();
+      return;
+    }
+  } catch {
+    // Local config file unavailable.
+  }
+
+
+  window.APP_CONFIG = window.APP_CONFIG || {};
+}
+
+
+
+
+
+
+await loadConfig();
+
+
+const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey;
+const CMS_API_BASE = "https://marketplace.api.healthcare.gov/api/v1";
+const BENTON_COUNTY_FIPS = "41003";
+const BENTON_ZIP = "97330";
+
+
+const CMS_DATA_API = "https://data.cms.gov/data-api/v1/dataset";
+const INPATIENT_PROVIDER_SERVICE_DATASET_ID = "690ddc6c-2767-4618-b277-420ffb2bf27c";
+
 
 const state = {
   geocoder: null,
@@ -205,8 +181,11 @@ const state = {
   markers: [],
   results: [],
   searchOrigin: COUNTY.center,
+  routeOrigin: COUNTY.center,
   activeView: "results",
+  selectedServices: new Set(["primary-care"]),
 };
+
 
 const elements = {
   chips: [...document.querySelectorAll(".chip")],
@@ -215,65 +194,78 @@ const elements = {
   map: document.querySelector("#map"),
   mapView: document.querySelector("#map-view"),
   openNowInput: document.querySelector("#open-now-input"),
+  transportationSelect: document.querySelector("#transportation-select"),
+  travelTimeSelect: document.querySelector("#travel-time"),
   resultsList: document.querySelector("#results-list"),
+  insuranceZip: document.querySelector("#insurance-zip"),
+  insuranceIncome: document.querySelector("#insurance-income"),
+  insuranceAge: document.querySelector("#insurance-age"),
+  insuranceForm: document.querySelector("#insurance-form"),
+  insuranceSection: document.querySelector("#insurance-form-section"),
   resultsView: document.querySelector("#results-view"),
   resultsTitle: document.querySelector("#results-title"),
   searchButton: document.querySelector("#search-button"),
   searchForm: document.querySelector("#search-form"),
-  serviceSelect: document.querySelector("#service-select"),
   statusMessage: document.querySelector("#status-message"),
   summaryPill: document.querySelector("#summary-pill"),
   viewToggle: document.querySelector("#view-toggle"),
   favoritesInput: document.querySelector("#favorites-input"),
 };
 
-const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey;
+
+//bootstrap();
+//const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey;
+
 
 function bootstrap() {
   bindEvents();
+  syncActiveChips();
   setActiveView(state.activeView);
+
 
   if (!googleMapsApiKey || googleMapsApiKey === "YOUR_GOOGLE_MAPS_API_KEY") {
     renderMapSetupMessage();
-    updateStatus(
-      "Add your Google Maps API key in config.js, then reload the page to search for providers.",
-      "Setup needed"
-    );
+    updateStatus("Add your Google Maps API key, then reload the page to search for providers.", "Setup needed");
     return;
   }
 
+
   loadGoogleMapsScript();
 }
+
 
 function getFavoriteId(result) {
   return result.name.toLowerCase().replaceAll(" ", "-");
 }
 
+
 function bindEvents() {
+
 
   let isFavOn = false;
   let favs = [];
   elements.resultsList.addEventListener("click", async (event) => {
     const favButton = event.target.closest(".fav-btn");
 
+
     if (!favButton) {
       return;
     }
 
+
     event.preventDefault();
     event.stopPropagation();
+
 
     const card = favButton.closest(".result-card");
     const index = Number(card.dataset.resultIndex);
     const result = state.results[index];
 
+
     const favoriteId = getFavoriteId(result);
     const user = auth.currentUser;
-    if (!user || isGuest) {
-      alert("Please log in to save favorites.");
-      return;
-    }
     const favoriteRef = doc(db, "users", user.uid, "favorites", favoriteId);
+
 
     try {
     if (savedFavoriteIds.has(favoriteId)) {
@@ -291,6 +283,7 @@ function bindEvents() {
         savedAt: serverTimestamp()
       });
 
+
       savedFavoriteIds.add(favoriteId);
       favButton.textContent = "💖";
     }
@@ -301,123 +294,291 @@ function bindEvents() {
 });
 
 
+
+
   elements.searchForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await performSearch();
   });
 
-  elements.viewToggle.addEventListener("click", async () => {
+
+  elements.viewToggle?.addEventListener("click", async () => {
     await setActiveView(state.activeView === "results" ? "map" : "results");
   });
 
+
   elements.chips.forEach((chip) => {
     chip.addEventListener("click", async () => {
-      const { service } = chip.dataset;
-      elements.serviceSelect.value = service;
-      syncActiveChip(service);
-      await performSearch();
+      toggleService(chip.dataset.service);
+      syncActiveChips();
+
+
+      if (state.geocoder) {
+        await performSearch();
+      }
     });
   });
 
-  elements.serviceSelect.addEventListener("change", () => {
-    syncActiveChip(elements.serviceSelect.value);
+
+  elements.openNowInput?.addEventListener("change", async () => {
+    await performSearch();
   });
+
+
+  elements.favoritesInput?.addEventListener("change", async () => {
+    await performSearch();
+  });
+
+
+  elements.transportationSelect?.addEventListener("change", performSearch);
+  elements.travelTimeSelect?.addEventListener("change", performSearch);
+
+
+  bindInsuranceForm();
+  bindPriceForm();
 }
+
 
 function loadGoogleMapsScript() {
   window.initHealthcareFinder = initMapExperience;
 
+
   const script = document.createElement("script");
   script.src =
     `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsApiKey)}` +
-    `&v=weekly&libraries=places&callback=initHealthcareFinder`;
+    `&v=weekly&libraries=places,routes&callback=initHealthcareFinder`;
   script.async = true;
   script.defer = true;
   script.onerror = () => {
-    renderMapSetupMessage(
-      "Google Maps failed to load. Check your API key, enabled APIs, and referrer restrictions."
-    );
-    updateStatus(
-      "Google Maps could not load. Verify your key and Google Cloud settings, then try again.",
-      "Load failed"
-    );
+    renderMapSetupMessage("Google Maps failed to load. Check your API key, enabled APIs, and referrer restrictions.");
+    updateStatus("Google Maps could not load. Verify your key and Google Cloud settings, then try again.", "Load failed");
   };
+
 
   document.head.appendChild(script);
 }
 
+
 async function initMapExperience() {
   state.geocoder = new google.maps.Geocoder();
   state.infoWindow = new google.maps.InfoWindow();
-  updateStatus(
-    "Search for primary care, urgent care, pharmacies, mental health, and more across Benton County.",
-    "Map ready"
-  );
+
+
+  updateStatus("Search for primary care, urgent care, pharmacies, mental health, and more across Benton County.", "Map ready");
+
 
   await performSearch({ initial: true });
+  await initAutocomplete();
 }
 
+
+async function initAutocomplete() {
+  const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
+  const autocomplete = new PlaceAutocompleteElement({ componentRestrictions: { country: "us" } });
+
+
+  elements.locationInput.replaceWith(autocomplete);
+  elements.locationInput = autocomplete;
+
+
+  autocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
+    const place = placePrediction.toPlace();
+    await place.fetchFields({ fields: ["displayName", "formattedAddress", "location"] });
+
+
+    state.routeOrigin = place.location?.toJSON ? place.location.toJSON() : place.location;
+    state.searchOrigin = state.routeOrigin;
+    state.selectedLocationLabel = place.formattedAddress || place.displayName || COUNTY.fallbackLocationLabel;
+  });
+}
+
+
+async function computeRouteMatrixForResults(results, transportModeVal) {
+  const modeMap = {
+    drive: "DRIVE",
+    walk: "WALK",
+    bike: "BICYCLE",
+    transit: "TRANSIT",
+  };
+
+
+  const travelMode = modeMap[transportModeVal] ?? "DRIVE";
+
+
+  await Promise.all(
+    results.map(async (place) => {
+      try {
+        const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": googleMapsApiKey,
+            "X-Goog-FieldMask": "routes.duration",
+          },
+          body: JSON.stringify({
+            origin: {
+              location: {
+                latLng: {
+                  latitude: state.searchOrigin.lat,
+                  longitude: state.searchOrigin.lng,
+                },
+              },
+            },
+            destination: {
+              location: {
+                latLng: {
+                  latitude: place.location.lat,
+                  longitude: place.location.lng,
+                },
+              },
+            },
+            travelMode,
+          }),
+        });
+
+
+        const data = await response.json();
+        const durationStr = data.routes?.[0]?.duration;
+        place.travelTimeSeconds = durationStr ? parseInt(durationStr, 10) : null;
+      } catch (err) {
+        console.warn("Routes API failed for place:", place.name, err);
+        place.travelTimeSeconds = null;
+      }
+    })
+  );
+}
+
+
+
+
 async function performSearch({ initial = false } = {}) {
-  if (!state.geocoder) {
+  if (!state.geocoder) return;
+
+
+  const selectedServiceKeys = [...state.selectedServices];
+  if (!selectedServiceKeys.length) {
+    updateStatus("Choose at least one healthcare service to search.", "Select service");
     return;
   }
 
-  const service = HEALTHCARE_SERVICES[elements.serviceSelect.value];
-  const locationQuery =
-    elements.locationInput.value.trim() || COUNTY.fallbackLocationLabel;
-  const keywordQuery = elements.keywordsInput.value.trim();
-  const openNowOnly = elements.openNowInput.checked;
+
+  const selectedServices = selectedServiceKeys.map((key) => HEALTHCARE_SERVICES[key]).filter(Boolean);
+  const serviceLabels = selectedServices.map((service) => service.label);
+  const serviceSummary = buildServiceSummary(serviceLabels);
+  const locationQuery = getLocationQuery();
+  const keywordQuery = elements.keywordsInput?.value.trim() || "";
+  const openNowOnly = Boolean(elements.openNowInput?.checked);
+  //const service = HEALTHCARE_SERVICES[elements.serviceSelect.value];
+  //const locationQuery = elements.locationInput.value.trim() || COUNTY.fallbackLocationLabel;
+  //const keywordQuery = elements.keywordsInput.value.trim();
+  //const openNowOnly = elements.openNowInput.checked;
   const favoritesOnly = elements.favoritesInput.checked;
 
-  setLoading(true, service.label);
-  updateStatus(
-    `Searching for ${service.label.toLowerCase()} in ${COUNTY.label}...`,
-    "Searching"
-  );
+
+  setLoading(true, serviceSummary);
+  updateStatus(`Searching for ${serviceSummary.toLowerCase()} in ${COUNTY.label}...`, "Searching");
+
 
   try {
-    const searchOrigin = await geocodeLocation(locationQuery);
-    state.searchOrigin = searchOrigin.location;
+    const routeOrigin = await resolveSearchOrigin(locationQuery);
+    state.routeOrigin = routeOrigin.location;
+    state.searchOrigin = routeOrigin.location;
 
-    if (state.map) {
-      state.map.panTo(searchOrigin.location);
-      state.map.setZoom(11);
-    }
 
     const { Place } = await google.maps.importLibrary("places");
-    const request = {
-      textQuery: buildTextQuery(service.query, locationQuery, keywordQuery),
-      fields: [
-        "displayName",
-        "formattedAddress",
-        "location",
-        "googleMapsURI",
-        "websiteURI",
-        "nationalPhoneNumber",
-        "rating",
-        "regularOpeningHours",
-        "businessStatus",
-        "primaryType",
-        "primaryTypeDisplayName",
-      ],
-      language: "en-US",
-      region: "us",
-      maxResultCount: 15,
-      locationBias: searchOrigin.location,
-      isOpenNow: openNowOnly || undefined,
-    };
 
-    if (service.includedType) {
-      request.includedType = service.includedType;
-      request.useStrictTypeFiltering = service.strictTypeFiltering;
+
+    const placesByService = await Promise.all(
+      selectedServices.map(async (service) => {
+        const request = {
+          textQuery: buildTextQuery(service.query, locationQuery, keywordQuery),
+          fields: [
+            "displayName",
+            "formattedAddress",
+            "location",
+            "googleMapsURI",
+            "websiteURI",
+            "nationalPhoneNumber",
+            "rating",
+            "regularOpeningHours",
+            "businessStatus",
+            "primaryType",
+            "primaryTypeDisplayName",
+          ],
+          language: "en-US",
+          region: "us",
+          maxResultCount: 12,
+          locationBias: routeOrigin.location,
+          isOpenNow: openNowOnly || undefined,
+        };
+
+
+        if (service.includedType) {
+          request.includedType = service.includedType;
+          request.useStrictTypeFiltering = service.strictTypeFiltering;
+        }
+
+
+        const { places = [] } = await Place.searchByText(request);
+        await Promise.all(places.map(fetchPlaceDetails));
+        return places;
+      })
+    );
+
+
+    const dedupedResults = new Map();
+
+
+    placesByService
+      .flat()
+      .map((place) => normalizePlace(place, routeOrigin.formattedAddress))
+      .filter((place) => place.location && isWithinCountyBoundary(place.location))
+      .forEach((place) => {
+        const key = place.googleMapsUri || `${place.name}|${place.address}`;
+        const existing = dedupedResults.get(key);
+
+
+        if (!existing || place.distanceMeters < existing.distanceMeters) {
+          dedupedResults.set(key, place);
+        }
+      });
+
+
+    let results = [...dedupedResults.values()];
+    const transportModeVal = elements.transportationSelect?.value || "drive";
+    const maxTravelMinutes = Number(elements.travelTimeSelect?.value) || null;
+
+
+    if (results.length) {
+      await computeRouteMatrixForResults(results, transportModeVal);
     }
 
+
+    if (Number.isFinite(maxTravelMinutes) && maxTravelMinutes > 0) {
+      results = results.filter(
+        (place) => (place.travelTimeSeconds ?? Number.POSITIVE_INFINITY) <= maxTravelMinutes * 60
+      );
+    }
+
+
+    results.sort((left, right) => {
+      if (Number.isFinite(maxTravelMinutes) && maxTravelMinutes > 0) {
+        return (left.travelTimeSeconds || Number.POSITIVE_INFINITY) - (right.travelTimeSeconds || Number.POSITIVE_INFINITY);
+      }
+
+
+      return left.distanceMeters - right.distanceMeters;
+    });
+    /*
     const { places = [] } = await Place.searchByText(request);
+
 
     let results = places
       .map((place) => normalizePlace(place, searchOrigin.formattedAddress))
       .filter((place) => place.location && isWithinCountyBoundary(place.location))
       .sort((left, right) => left.distanceMeters - right.distanceMeters);
+    */
+
 
     if (favoritesOnly) {
       results = results.filter((result) =>
@@ -425,100 +586,257 @@ async function performSearch({ initial = false } = {}) {
       );
     }
 
+
     state.results = results;
-    if (state.map) {
-      renderMarkers(results);
+
+
+    if (state.map) renderMarkers(results);
+    renderResults(results, serviceSummary, routeOrigin.formattedAddress, initial);
+
+
+    if (results.length) {
+      const zip = resolveZipFromLocation(locationQuery);
+      const plans = await fetchInsurancePlans(zip);
+      renderInsurancePanel(plans);
+    } else {
+      document.getElementById("insurance-panel")?.remove();
     }
-    renderResults(results, service.label, searchOrigin.formattedAddress, initial);
   } catch (error) {
     console.error(error);
     clearMarkers();
     elements.resultsList.innerHTML = "";
-    updateStatus(
-      "The search could not be completed. Check the location entry or your Google Maps setup and try again.",
-      "Search failed"
-    );
+    document.getElementById("insurance-panel")?.remove();
+    updateStatus(buildSearchFailureMessage(error), "Search failed");
   } finally {
-    setLoading(false, service.label);
+    setLoading(false, serviceSummary);
   }
 }
 
-function buildTextQuery(serviceQuery, locationQuery, keywordQuery) {
-  const parts = [
-    serviceQuery,
-    keywordQuery,
-    `near ${locationQuery}`,
-    `in ${COUNTY.label}`,
-  ];
 
-  return parts.filter(Boolean).join(" ");
+
+
+function renderInsurancePanel(plans) {
+  document.getElementById("insurance-panel")?.remove();
+
+
+  const panel = document.createElement("section");
+  panel.id = "insurance-panel";
+  panel.className = "insurance-panel";
+
+
+  const safePlans = Array.isArray(plans) ? plans : [];
+
+
+  panel.innerHTML = `
+    <h3 class="insurance-title">Available Plans</h3>
+
+
+    ${
+      safePlans.length
+        ? `
+          <div class="insurance-cards">
+            ${safePlans.slice(0, 3).map((plan) => {
+  const planData = plan.plan || plan;
+
+
+  const links = [
+    { label: "Plan details", url: planData.url || planData.plan_url || planData.detail_url },
+    { label: "Brochure", url: planData.brochure_url || planData.brochureUrl },
+    { label: "Benefits", url: planData.benefits_url || planData.benefitsUrl || planData.sbc_url },
+    { label: "Provider directory", url: planData.network_url || planData.provider_directory_url },
+    { label: "Drug list", url: planData.formulary_url || planData.drug_formulary_url },
+  ].filter((link) => link.url);
+
+
+  return `
+    <div class="insurance-card">
+      <div class="insurance-card-header">
+        <span class="insurance-card-name">
+          ${escapeHtml(planData.name || "Plan name unavailable")}
+        </span>
+        <span class="plan-price">
+          $${escapeHtml(plan.premium ?? planData.premium ?? "N/A")}/mo
+        </span>
+      </div>
+
+
+      <p><strong>ID:</strong> ${escapeHtml(planData.id || plan.id || "ID unavailable")}</p>
+      <p>Issuer: ${escapeHtml(planData.issuer?.name || planData.issuer_name || "Issuer unavailable")}</p>
+      <small>
+        Type: ${escapeHtml(planData.type || "N/A")} |
+        Metal: ${escapeHtml(planData.metal_level || "N/A")}
+      </small>
+
+
+      <div class="insurance-card-links">
+        ${
+          links.length
+            ? links.map((link) => `
+                <a href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer">
+                  ${escapeHtml(link.label)}
+                </a>
+              `).join("")
+            : `<span class="insurance-card-no-link">No plan links available</span>`
+        }
+      </div>
+    </div>
+  `;
+}).join("")}
+
+
+          </div>
+        `
+        : `<p class="insurance-empty">No plans found.</p>`
+    }
+  `;
+
+
+  elements.resultsList.appendChild(panel);
 }
+
+
+function resolveZipFromLocation(locationQuery) {
+  // Try to extract a 5-digit ZIP from the query string first
+  const match = locationQuery.match(/\b(\d{5})\b/);
+  if (match) return match[1];
+  // Fall back to Corvallis
+  return BENTON_ZIP;
+}
+
+
+function bindInsuranceForm() {
+  const form = document.getElementById("insurance-form");
+  if (!form) return;
+
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+
+    const zip = document.getElementById("insurance-zip").value.trim() || BENTON_ZIP;
+    const userInputs = {
+      age: document.getElementById("insurance-age").value,
+      income: document.getElementById("insurance-income").value,
+      gender: document.getElementById("insurance-gender").value,
+      tobacco: document.getElementById("insurance-tobacco").value,
+    };
+
+
+    const btn = document.getElementById("insurance-search-btn");
+    btn.disabled = true;
+    btn.textContent = "Searching plans...";
+
+
+    try {
+      const plans = await fetchInsurancePlans(zip, userInputs);
+      renderInsurancePanel(plans);
+    } catch (err) {
+      console.warn("Insurance plan fetch failed:", err);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Find Plans";
+    }
+  });
+}
+
+
+
+
+async function getFipsFromZip(zipCode) {
+  const apikey = window.APP_CONFIG?.cmsMarketplaceApiKey;
+  if (!apikey) return BENTON_COUNTY_FIPS;
+
+
+  const res = await fetch(`${CMS_API_BASE}/counties/by/zip/${zipCode}?apikey=${apikey}`);
+
+
+  if (!res.ok) {
+    return BENTON_COUNTY_FIPS;
+  }
+
+
+  const data = await res.json();
+  return data.counties?.[0]?.fips || BENTON_COUNTY_FIPS;
+}
+
+
+
+
+function buildTextQuery(serviceQuery, locationQuery, keywordQuery) {
+  return [serviceQuery, keywordQuery, `near ${locationQuery}`, `in ${COUNTY.label}`].filter(Boolean).join(" ");
+}
+
 
 function normalizePlace(place, searchAddress) {
   const location = place.location?.toJSON ? place.location.toJSON() : place.location;
-  const distanceMeters = location
-    ? calculateDistanceMeters(state.searchOrigin, location)
-    : Number.POSITIVE_INFINITY;
+  const weekdayHours = place.regularOpeningHours?.weekdayDescriptions;
+
 
   return {
     address: place.formattedAddress || "Address not provided",
-    distanceMeters,
+    distanceMeters: location ? calculateDistanceMeters(state.searchOrigin, location) : Number.POSITIVE_INFINITY,
     googleMapsUri: place.googleMapsURI || "",
-    hours:
-      place.regularOpeningHours?.weekdayDescriptions?.[0] ||
-      "Hours not available",
+    hours: Array.isArray(weekdayHours) && weekdayHours.length ? weekdayHours.join(" | ") : "Hours not available",
     location,
-    name: place.displayName || "Healthcare service",
+    name: place.displayName || place.name || "Healthcare service",
     phone: place.nationalPhoneNumber || "",
     rating: typeof place.rating === "number" ? place.rating : null,
     searchAddress,
     serviceType: place.primaryTypeDisplayName || place.primaryType || "Healthcare",
-    websiteUri: place.websiteURI || "",
+    websiteURI: place.websiteURI || "",
   };
 }
 
+
 function renderResults(results, serviceLabel, resolvedLocation, initial) {
   elements.resultsTitle.textContent = `${serviceLabel} near ${resolvedLocation}`;
-
   if (!results.length) {
     elements.resultsList.innerHTML = "";
     updateStatus(
       initial
-        ? "No matching healthcare services were returned yet. Try another category or a nearby ZIP code."
-        : "No matching services were found inside Benton County. Try broadening the service type or location.",
+        ? "No matching healthcare services were returned yet."
+        : "No matching services were found inside Benton County.",
       "No results"
     );
     return;
   }
-
   updateStatus(
     `Found ${results.length} ${serviceLabel.toLowerCase()} result${results.length === 1 ? "" : "s"} in or near Benton County.`,
     `${results.length} found`
   );
 
+
   elements.resultsList.innerHTML = results
     .map((result, index) => {
       const actions = [
-        result.googleMapsUri
-          ? `<a href="${result.googleMapsUri}" target="_blank" rel="noreferrer">Directions</a>`
-          : "",
-        result.websiteUri
-          ? `<a href="${result.websiteUri}" target="_blank" rel="noreferrer">Website</a>`
-          : "",
-        result.phone ? `<a href="tel:${result.phone}">Call</a>` : "",
-      ]
-        .filter(Boolean)
-        .join("");
+      result.websiteURI
+      ? `<a class="action-book" href="${result.websiteURI}" target="_blank" rel="noreferrer">Book</a>`
+      : "",
+      result.googleMapsUri
+      ? `<a href="${result.googleMapsUri}" target="_blank" rel="noreferrer">Directions</a>`
+      : "",
+      result.websiteURI
+      ? `<a href="${result.websiteURI}" target="_blank" rel="noreferrer">Website</a>`
+      : "",
+      result.phone ? `<a href="tel:${result.phone}">Call</a>` : "",
+      ].filter(Boolean).join("");
+
+
+
 
       const meta = [
         result.serviceType ? `<span class="meta-pill">${escapeHtml(result.serviceType)}</span>` : "",
         result.rating ? `<span class="meta-pill">Rating ${result.rating.toFixed(1)}</span>` : "",
+        Number.isFinite(result.travelTimeSeconds)
+          ? `<span class="meta-pill">${escapeHtml(formatTravelTime(result.travelTimeSeconds))}</span>`
+          : "",
         Number.isFinite(result.distanceMeters)
           ? `<span class="meta-pill">${formatMiles(result.distanceMeters)} away</span>`
           : "",
       ]
         .filter(Boolean)
         .join("");
+
 
       const favoriteId = getFavoriteId(result);
       const isSaved = savedFavoriteIds.has(favoriteId);
@@ -535,11 +853,13 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
     })
     .join("");
 
+
   [...elements.resultsList.querySelectorAll(".result-card")].forEach((card) => {
   card.addEventListener("click", (event) => {
     if (event.target.closest(".fav-btn")) {
       return;
     }
+
 
     const index = Number(card.dataset.resultIndex);
     focusResult(index);
@@ -547,14 +867,23 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
 });
 }
 
+
+
+
 function renderMarkers(results) {
   clearMarkers();
 
-  if (!results.length) {
+
+  // Add this guard — map not ready yet
+  if (!state.map || !results.length) {
     return;
   }
 
+
+
+
   const bounds = new google.maps.LatLngBounds();
+
 
   results.forEach((result, index) => {
     const marker = new google.maps.Marker({
@@ -564,34 +893,65 @@ function renderMarkers(results) {
       label: String(index + 1),
     });
 
+
     marker.addListener("click", () => openInfoWindow(result, marker));
+
 
     state.markers.push(marker);
     bounds.extend(result.location);
   });
 
+
   bounds.extend(COUNTY.center);
   state.map.fitBounds(bounds, 56);
 }
 
+
+async function fetchPlaceDetails(place) {
+  const detailFields = [
+    "googleMapsURI",
+    "websiteURI",
+    "nationalPhoneNumber",
+    "regularOpeningHours",
+  ];
+
+
+  if (!place?.fetchFields) return;
+
+
+  try {
+    await place.fetchFields({ fields: detailFields });
+  } catch (error) {
+    console.warn("Place details fetch failed:", error);
+  }
+}
+
+
+
+
 async function focusResult(index) {
   const result = state.results[index];
+
 
   if (!result) {
     return;
   }
 
+
   await setActiveView("map");
   const marker = state.markers[index];
+
 
   if (!marker) {
     return;
   }
 
+
   state.map.panTo(result.location);
   state.map.setZoom(13);
   openInfoWindow(result, marker);
 }
+
 
 function openInfoWindow(result, marker) {
   const details = [
@@ -601,24 +961,54 @@ function openInfoWindow(result, marker) {
     result.googleMapsUri
       ? `<div><a href="${result.googleMapsUri}" target="_blank" rel="noreferrer">Open in Google Maps</a></div>`
       : "",
-  ]
-    .filter(Boolean)
-    .join("");
+    result.websiteURI
+      ? `<div><a href="${result.websiteURI}" target="_blank" rel="noreferrer">Website</a></div>`
+      : "",
+  ].filter(Boolean).join("");
+
 
   state.infoWindow.setContent(`<div class="info-window">${details}</div>`);
   state.infoWindow.open({ anchor: marker, map: state.map });
 }
+
+
+
 
 function clearMarkers() {
   state.markers.forEach((marker) => marker.setMap(null));
   state.markers = [];
 }
 
+
 function syncActiveChip(service) {
   elements.chips.forEach((chip) => {
     chip.classList.toggle("is-active", chip.dataset.service === service);
   });
 }
+
+
+//Added integration!! May delete ??
+function toggleService(service) {
+  if (!service || !HEALTHCARE_SERVICES[service]) {
+    return;
+  }
+
+
+  if (state.selectedServices.has(service)) {
+    // Keep at least one service selected.
+    if (state.selectedServices.size === 1) {
+      return;
+    }
+
+
+    state.selectedServices.delete(service);
+    return;
+  }
+
+
+  state.selectedServices.add(service);
+}
+
 
 function setLoading(isLoading, serviceLabel) {
   elements.searchButton.disabled = isLoading;
@@ -627,10 +1017,12 @@ function setLoading(isLoading, serviceLabel) {
     : "Search healthcare services";
 }
 
+
 function updateStatus(message, pillText) {
   elements.statusMessage.textContent = message;
   elements.summaryPill.textContent = pillText;
 }
+
 
 function renderMapSetupMessage(customMessage) {
   elements.map.innerHTML = `
@@ -646,8 +1038,10 @@ function renderMapSetupMessage(customMessage) {
   `;
 }
 
+
 async function setActiveView(view) {
   state.activeView = view === "map" ? "map" : "results";
+
 
   const showingResults = state.activeView === "results";
   elements.resultsView.hidden = !showingResults;
@@ -657,9 +1051,11 @@ async function setActiveView(view) {
   elements.viewToggle.classList.toggle("is-map", !showingResults);
   elements.viewToggle.setAttribute("aria-pressed", String(!showingResults));
 
+
   if (!showingResults) {
     await nextFrame();
     await ensureMapInitialized();
+
 
     if (state.map && window.google?.maps) {
       renderMarkers(state.results);
@@ -674,12 +1070,15 @@ async function setActiveView(view) {
   }
 }
 
+
 async function ensureMapInitialized() {
   if (state.map || !window.google?.maps) {
     return;
   }
 
+
   await nextFrame();
+
 
   state.map = new google.maps.Map(elements.map, {
     center: state.searchOrigin,
@@ -689,7 +1088,9 @@ async function ensureMapInitialized() {
     fullscreenControl: false,
   });
 
+
   drawCountyBoundaryHint();
+
 
   if (state.results.length) {
     renderMarkers(state.results);
@@ -699,16 +1100,48 @@ async function ensureMapInitialized() {
   }
 }
 
+
 function nextFrame() {
   return new Promise((resolve) => {
     window.requestAnimationFrame(() => resolve());
   });
 }
 
+
+function buildSearchFailureMessage(error) {
+  const message = typeof error?.message === "string" ? error.message : "";
+
+
+  if (message.includes("ApiNotActivatedMapError")) {
+    return "Google Maps loaded, but the required Places service is not activated for this project. Enable Places API (New) in Google Cloud and try again.";
+  }
+
+
+  if (message.includes("RefererNotAllowedMapError")) {
+    return "This API key is blocked by its HTTP referrer restrictions. Add your local URL, like http://localhost:4173/*, in Google Cloud.";
+  }
+
+
+  if (message.includes("REQUEST_DENIED") || message.includes("PERMISSION_DENIED")) {
+    return `Google denied the Places request. Confirm that Places API (New) is enabled, billing is active, and the key is allowed to use Places. Raw error: ${message}`;
+  }
+
+
+  if (message) {
+    return `Search failed: ${message}`;
+  }
+
+
+  return "The search could not be completed. Check the location entry or your Google Maps setup and try again.";
+//>>>>>>> 4446498d8e391af488e4f7b6699115b2a8244cb6
+}
+
+
 function drawCountyBoundaryHint() {
   if (state.mapCircle) {
     state.mapCircle.setMap(null);
   }
+
 
   state.mapCircle = new google.maps.Circle({
     map: state.map,
@@ -722,17 +1155,21 @@ function drawCountyBoundaryHint() {
   });
 }
 
+
 async function geocodeLocation(query) {
   const response = await state.geocoder.geocode({
     address: query,
     componentRestrictions: { country: "US" },
   });
 
+
   if (!response.results?.length) {
     throw new Error(`No map result found for "${query}".`);
   }
 
+
   const topResult = response.results[0];
+
 
   return {
     formattedAddress: topResult.formatted_address,
@@ -740,9 +1177,35 @@ async function geocodeLocation(query) {
   };
 }
 
+
+async function resolveSearchOrigin(query) {
+  try {
+    return await geocodeLocation(query);
+  } catch (error) {
+    const message = typeof error?.message === "string" ? error.message : "";
+
+
+    if (
+      message.includes("REQUEST_DENIED") ||
+      message.includes("The webpage is not allowed to use the geocoder")
+    ) {
+      console.warn("Geocoder unavailable, falling back to county center:", error);
+      return {
+        formattedAddress: `${query} (search biased from ${COUNTY.fallbackLocationLabel})`,
+        location: COUNTY.center,
+      };
+    }
+
+
+    throw error;
+  }
+}
+
+
 function isWithinCountyBoundary(location) {
   return calculateDistanceMeters(COUNTY.center, location) <= COUNTY.radiusMeters;
 }
+
 
 function calculateDistanceMeters(from, to) {
   const earthRadius = 6371000;
@@ -751,21 +1214,36 @@ function calculateDistanceMeters(from, to) {
   const startLat = degreesToRadians(from.lat);
   const endLat = degreesToRadians(to.lat);
 
+
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(startLat) * Math.cos(endLat);
+
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return earthRadius * c;
 }
 
+
 function degreesToRadians(value) {
   return (value * Math.PI) / 180;
 }
 
+
 function formatMiles(distanceMeters) {
   return `${(distanceMeters * 0.000621371).toFixed(1)} mi`;
 }
+
+
+function formatTravelTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds === Number.POSITIVE_INFINITY) return "Time unavailable";
+  const mins = Math.round(seconds / 60);
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.floor(mins / 60);
+  const remaining = mins % 60;
+  return `${hours} hr${hours > 1 ? "s" : ""}${remaining ? ` ${remaining} min` : ""}`;
+}
+
 
 function escapeHtml(value) {
   return String(value)
@@ -776,25 +1254,91 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+
+async function fetchInsurancePlans(zipCode = BENTON_ZIP, userInputs = {}) {
+  const apikey = window.APP_CONFIG?.cmsMarketplaceApiKey;
+  if (!apikey) return null;
+
+
+  const age = parseInt(userInputs.age) || 30;
+  const income = parseInt(userInputs.income) || 40000;
+  const gender = userInputs.gender || "Female";
+  const uses_tobacco = userInputs.tobacco === "true";
+
+
+  // Dynamically look up the correct FIPS for whatever ZIP was entered
+  const countyfips = await getFipsFromZip(zipCode);
+
+
+  console.log("--- CMS Request ---");
+  console.log("ZIP:", zipCode, "FIPS:", countyfips, "Age:", age, "Income:", income);
+
+
+  const res = await fetch(`${CMS_API_BASE}/plans/search?apikey=${apikey}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      household: {
+        income,
+        people: [
+          {
+            age,
+            aptc_eligible: true,
+            gender,
+            uses_tobacco,
+          },
+        ],
+      },
+      market: "Individual",
+      place: {
+        countyfips,   // ← now dynamic based on ZIP
+        state: "OR",
+        zipcode: zipCode,
+      },
+      year: 2025,
+    }),
+  });
+
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    console.error("CMS API raw error:", errorBody);
+    throw new Error(`CMS API error: ${res.status}`);
+  }
+
+
+  const data = await res.json();
+ 
+  console.log("Total plans returned:", data.plans?.length);
+  return data.plans ?? [];
+}
+
+
 // ---- Chatbot ----
+
 
 const GEMINI_KEY = window.APP_CONFIG?.geminiApiKey;;
 const MODEL = "gemini-2.5-flash";
 
+
 const GEMINI_URL =
-  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_KEY}`;
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${window.APP_CONFIG.geminiApiKey}`;
+
 
 let chatHistory = [];
+
 
 function toggleChat() {
   const win = document.getElementById('chat-window');
   const isHidden = win.style.display === 'none';
   win.style.display = isHidden ? 'flex' : 'none';
 
+
   if (isHidden && chatHistory.length === 0) {
     addMessage('bot', 'Hi! Describe your symptoms and I\'ll suggest what type of doctor to see and help you find affordable care nearby. 🏥');
   }
 }
+
 
 function addMessage(role, text) {
   const messages = document.getElementById('chat-messages');
@@ -806,23 +1350,26 @@ function addMessage(role, text) {
   return div;
 }
 
+
 async function sendMessage() {
   const input = document.getElementById('chat-input');
   const userText = input.value.trim();
   if (!userText) return;
 
+
   // Show user message
   addMessage('user', userText);
   input.value = '';
+
 
   // Add to history
   chatHistory.push({
     role: 'user',
     parts: [{ text: userText }]
   });
-
-  // Show loading
+    // Show loading
   const loadingDiv = addMessage('loading', 'Thinking...');
+
 
   try {
     const response = await fetch(GEMINI_URL, {
@@ -836,17 +1383,21 @@ async function sendMessage() {
               {
                 text: `You are a helpful healthcare triage assistant.
 
+
     When a user describes symptoms:
     1. Suggest what type of doctor/specialist they should see
     2. Indicate urgency: Emergency, Urgent (within 24hrs), or Routine
     3. Give 1–2 sentences of practical advice
     4. If symptoms sound serious, always recommend emergency care
 
+
     Format your response like this:
+
 
     Doctor: <type of doctor> <add 2 line spacing>
     Urgency: <Emergency / Urgent / Routine> <add 2 line spacing>
     Advice: <short advice> <add 2 line spacing>
+
 
     Keep responses concise and friendly.
     Never diagnose — only suggest next steps.`
@@ -858,18 +1409,21 @@ async function sendMessage() {
       })
     });
 
+
     const data = await response.json();
+
 
     // Check for errors from Gemini
     if (data.error) {
       throw new Error(data.error.message);
     }
+     const botReply = data.candidates[0].content.parts[0].text;
 
-    const botReply = data.candidates[0].content.parts[0].text;
 
     // Replace loading with real response
     loadingDiv.className = 'message bot';
     loadingDiv.textContent = botReply;
+
 
     // Add assistant reply to history
     chatHistory.push({
@@ -877,8 +1431,10 @@ async function sendMessage() {
       parts: [{ text: botReply }]
     });
 
+
     // Auto-search for providers based on reply
     autoSearchFromReply(botReply);
+
 
   } catch (err) {
     loadingDiv.className = 'message bot';
@@ -886,6 +1442,7 @@ async function sendMessage() {
     console.error('Gemini error:', err);
   }
 }
+
 
 // Auto-trigger provider search based on AI response
 function autoSearchFromReply(reply) {
@@ -900,22 +1457,154 @@ function autoSearchFromReply(reply) {
     'psychiatrist': 'mental-health'
   };
 
+
   const found = Object.keys(specialtyMap).find(s =>
     reply.toLowerCase().includes(s)
   );
 
+
   if (found) {
     const mapped = specialtyMap[found];
 
-    // ✅ use your actual dropdown
-    elements.serviceSelect.value = mapped;
 
-    // update UI + search
-    syncActiveChip(mapped);
+    state.selectedServices = new Set([mapped]);
+    syncActiveChips();
     performSearch();
+   
+
 
   }
 }
 
+
+
+
+// ── Hospital Price Comparison ────────────────────────────────────────────────
+
+
+// ── Hospital Price Comparison (data.cms.gov — free, no key) ──────────────────
+
+
+async function searchProcedurePrices(term) {
+  const url =
+    `${CMS_DATA_API}/${INPATIENT_PROVIDER_SERVICE_DATASET_ID}/data` +
+    `?filter[DRG_Desc][contains]=${encodeURIComponent(term.toUpperCase())}` +
+    `&filter[Rndrng_Prvdr_State_Abrvtn][value]=OR` +
+    `&size=10`;
+
+
+  const res = await fetch(url);
+
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("CMS data error body:", errText);
+    throw new Error(`CMS data error: ${res.status}`);
+  }
+
+
+  return await res.json();
+}
+
+
+function renderPriceResults(results) {
+  const container = document.getElementById("price-results");
+  if (!container) return;
+
+
+  if (!results.length) {
+    container.innerHTML = `<p class="insurance-empty">No procedures found. Try another search term.</p>`;
+    return;
+  }
+
+
+  container.innerHTML = `
+    <div class="price-table">
+      <div class="price-table-header">
+        <span>Procedure</span>
+        <span>Avg charge</span>
+        <span>Avg Medicare payment</span>
+      </div>
+      ${results.map((r) => `
+        <div class="price-table-row">
+          <span>${escapeHtml(r.DRG_Desc || r.drg_desc || "Procedure")}</span>
+          <span>${formatMoney(r.Avg_Submtd_Cvrd_Chrg || r.avg_submtd_cvrd_chrg)}</span>
+          <span>${formatMoney(r.Avg_Mdcr_Pymt_Amt || r.avg_mdcr_pymt_amt)}</span>
+        </div>
+      `).join("")}
+    </div>
+    <p class="price-note">CMS prices are Medicare averages. Actual costs vary by hospital and insurance plan.</p>
+  `;
+}
+
+
+function formatMoney(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? `$${number.toLocaleString()}` : "-";
+}
+
+
+function bindPriceForm() {
+  const form = document.getElementById("price-form");
+  if (!form) return;
+
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+
+    const term = document.getElementById("procedure-input")?.value.trim();
+    const btn = document.getElementById("price-search-btn");
+    const container = document.getElementById("price-results");
+
+
+    if (!term || !btn || !container) return;
+
+
+    btn.disabled = true;
+    btn.textContent = "Searching...";
+    container.innerHTML = `<p class="insurance-empty">Loading prices...</p>`;
+
+
+    try {
+      const results = await searchProcedurePrices(term);
+      console.log("First price result:", results[0]);
+      renderPriceResults(results);
+    } catch (err) {
+      console.error("Price lookup failed:", err);
+      container.innerHTML = `<p class="insurance-empty">Price lookup failed. Try another procedure.</p>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Compare Prices";
+    }
+  });
+}
+
+
+function syncActiveChips() {
+  elements.chips.forEach((chip) => {
+    chip.classList.toggle(
+      "is-active",
+      state.selectedServices.has(chip.dataset.service)
+    );
+  });
+}
+
+
+
+
+function buildServiceSummary(labels) {
+  if (labels.length === 1) return labels[0];
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+  return `${labels.slice(0, -1).join(", ")}, and ${labels.at(-1)}`;
+}
+
+
+function getLocationQuery() {
+  return state.selectedLocationLabel || elements.locationInput.value?.trim?.() || COUNTY.fallbackLocationLabel;
+}
+
+
 window.toggleChat = toggleChat;
 window.sendMessage = sendMessage;
+
