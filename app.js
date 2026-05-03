@@ -50,6 +50,37 @@ document.getElementById("login-btn").onclick = async () => {
 };
 
 
+let isGuest = false;
+// Continue as guest
+document.getElementById("guest-login-btn").onclick = async () => {
+  // Clears favorites from previous login so the favorites don't appear for guest
+  savedFavoriteIds.clear();
+
+
+  document.querySelectorAll(".fav-btn").forEach((button) => {
+    button.textContent = "🤍";
+  });
+
+
+
+
+  logoutButton.style.display = "block";
+  isGuest = true;
+ 
+  loginBox.style.display = "none";
+  document.querySelector(".sidebar").style.display = "block";
+  document.querySelector(".map-panel").style.display = "block";
+
+
+  if (!appStarted) {
+    appStarted = true;
+    bootstrap();
+  }
+};
+
+
+
+
 async function loadFavoritesForUser(user) {
   savedFavoriteIds.clear();
 
@@ -68,7 +99,24 @@ document.getElementById("logout-btn").onclick = async () => {
   email.value = "";
   password.value = "";
   logoutButton.style.display = "none";
+  const sidebar = document.querySelector(".sidebar");
+  const mapPanel = document.querySelector(".map-panel");
+  if(isGuest == true){
+    console.log("here");
+    loginBox.style.display = "block";
+    sidebar.style.display = "none";
+    mapPanel.style.display = "none";
+    logoutButton.style.display = "none";
+    isGuest = false;
+    return;
+  }
   await signOut(auth);
+
+
+  loginBox.style.display = "block";
+  sidebar.style.display = "none";
+  mapPanel.style.display = "none";
+  logoutButton.style.display = "none";
 };
 
 
@@ -264,6 +312,10 @@ function bindEvents() {
 
     const favoriteId = getFavoriteId(result);
     const user = auth.currentUser;
+    if (!user || isGuest) {
+      alert("Please log in to save favorites.");
+      return;
+    }
     const favoriteRef = doc(db, "users", user.uid, "favorites", favoriteId);
 
 
