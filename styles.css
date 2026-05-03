@@ -754,3 +754,83 @@ button:focus {
   cursor: pointer;
   font-size: 14px;
 }
+
+
+/* ── Price comparison ─────────────────────────────────────────── */
+#price-compare-section {
+  margin: 1rem 0;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+#price-compare-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+}
+
+.price-intro {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+}
+
+.price-table {
+  margin-top: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 0.8rem;
+}
+
+.price-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  background: #0f766e;
+  color: white;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.price-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  padding: 8px 12px;
+  border-top: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+.price-table-row:nth-child(even) {
+  background: #f8fafc;
+}
+
+.price-note {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 0.5rem;
+}
+
+#price-search-btn {
+  margin-top: 0.5rem;
+  padding: 8px 20px;
+  background: #0f766e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+}
+
+#price-search-btn:hover:not(:disabled) {
+  background: #0d6560;
+}
+
+#price-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -155,6 +155,7 @@ function bindEvents() {
   elements.travelTimeSelect?.addEventListener("change", async () => {
     await performSearch();
   });
+  bindPriceForm();
 }
 
 function loadGoogleMapsScript() {
@@ -202,11 +203,16 @@ async function initAutocomplete() {
   elements.locationInput.replaceWith(autocomplete);
   elements.locationInput = autocomplete;
 
-  autocomplete.addEventListener("gmp-placeselect", async (event) => {
-    const place = event.placePrediction.toPlace();
-    await place.fetchFields({ fields: ["location"] });
-    state.routeOrigin = place.location;
-  });
+ autocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
+  const place = placePrediction.toPlace();
+  await place.fetchFields({ fields: ["displayName", "formattedAddress", "location"] });
+
+  state.routeOrigin = place.location?.toJSON ? place.location.toJSON() : place.location;
+  state.searchOrigin = state.routeOrigin;
+  state.selectedLocationLabel =
+    place.formattedAddress || place.displayName || COUNTY.fallbackLocationLabel;
+});
+
 }
 
 
@@ -234,8 +240,9 @@ state.routeOrigin = routeOrigin.location;
 state.searchOrigin = routeOrigin.location;
 
 if (state.map) {
-  state.map.panTo(routeOrigin.location);
-  state.map.setZoom(11);
+  //state.map.panTo(routeOrigin.location);
+  //state.map.setZoom(11);
+  renderMarkers(results);
 }
 
 const { Place } = await google.maps.importLibrary("places");
@@ -279,7 +286,7 @@ const detailedPlaces = await Promise.all(
 let results = detailedPlaces
   .map((place) => normalizePlace(place, routeOrigin.formattedAddress))
   .filter((place) => place.location && isWithinCountyBoundary(place.location));
-
+  renderMarkers(results)
 const transportModeVal = elements.transportationSelect?.value || "drive";
 const maxTravelMinutes = Number(elements.travelTimeSelect?.value) || null;
 
@@ -325,30 +332,7 @@ if (results.length) {
 } else {
   document.getElementById("insurance-panel")?.remove();
 }
-
-
 // Inside performSearch, where it handles insurance:
-  if (results.length) {
-    (async () => {
-        try {
-            const zip = resolveZipFromLocation(locationQuery);
-            const plans = await fetchInsurancePlans(zip);
-            
-            // Check if resultsList exists before trying to attach something to it
-            if (elements.resultsList) {
-                renderInsurancePanel(plans);
-            } else {
-                console.error("Could not find #results-list to attach insurance panel.");
-            }
-        } catch (err) {
-            console.warn("Insurance plan fetch failed:", err);
-        }
-    })();
-  } else {
-      document.getElementById("insurance-panel")?.remove();
-    }
-    renderMarkers(results);
-    renderResults(results, service.label, routeOrigin.formattedAddress, initial);
   } catch (error) {
     console.error(error);
     clearMarkers();
@@ -391,7 +375,7 @@ function normalizePlace(place, searchAddress) {
         : null) ||
       "Hours not available",
     location,
-    name: place.name || "Healthcare service",
+    name: place.displayName || place.name || "Healthcare service",
     phone: place.nationalPhoneNumber || "",
     rating: typeof place.rating === "number" ? place.rating : null,
     searchAddress,
@@ -467,9 +451,11 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
 function renderMarkers(results) {
   clearMarkers();
 
-  if (!results.length) {
+  // Add this guard — map not ready yet
+  if (!state.map || !results.length) {
     return;
   }
+
 
   const bounds = new google.maps.LatLngBounds();
 
@@ -1154,6 +1140,96 @@ function autoSearchFromReply(reply) {
 function getLocationQuery() {
   return elements.locationInput.value?.trim?.() || COUNTY.fallbackLocationLabel;
 }
+
+// ── Hospital Price Comparison ────────────────────────────────────────────────
+
+// ── Hospital Price Comparison (data.cms.gov — free, no key) ──────────────────
+const CMS_DATA_API = "https://data.cms.gov/data-api/v1/dataset";
+const INPATIENT_PROVIDER_SERVICE_DATASET_ID = "690ddc6c-2767-4618-b277-420ffb2bf27c";
+
+async function searchProcedurePrices(term) {
+  const url =
+    `${CMS_DATA_API}/${INPATIENT_PROVIDER_SERVICE_DATASET_ID}/data` +
+    `?filter[DRG_Desc][contains]=${encodeURIComponent(term.toUpperCase())}` +
+    `&filter[Rndrng_Prvdr_State_Abrvtn][value]=OR` +
+    `&size=10`;
+
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("CMS data error body:", errText);
+    throw new Error(`CMS data error: ${res.status}`);
+  }
+
+  return await res.json();
+}
+
+function renderPriceResults(results) {
+  const container = document.getElementById("price-results");
+  if (!container) return;
+
+  if (!results.length) {
+    container.innerHTML = `<p class="insurance-empty">No procedures found. Try another search term.</p>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="price-table">
+      <div class="price-table-header">
+        <span>Procedure</span>
+        <span>Avg charge</span>
+        <span>Avg Medicare payment</span>
+      </div>
+      ${results.map((r) => `
+        <div class="price-table-row">
+          <span>${escapeHtml(r.DRG_Desc || r.drg_desc || "Procedure")}</span>
+          <span>${formatMoney(r.Avg_Submtd_Cvrd_Chrg || r.avg_submtd_cvrd_chrg)}</span>
+          <span>${formatMoney(r.Avg_Mdcr_Pymt_Amt || r.avg_mdcr_pymt_amt)}</span>
+        </div>
+      `).join("")}
+    </div>
+    <p class="price-note">CMS prices are Medicare averages. Actual costs vary by hospital and insurance plan.</p>
+  `;
+}
+
+function formatMoney(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? `$${number.toLocaleString()}` : "-";
+}
+
+function bindPriceForm() {
+  const form = document.getElementById("price-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const term = document.getElementById("procedure-input")?.value.trim();
+    const btn = document.getElementById("price-search-btn");
+    const container = document.getElementById("price-results");
+
+    if (!term || !btn || !container) return;
+
+    btn.disabled = true;
+    btn.textContent = "Searching...";
+    container.innerHTML = `<p class="insurance-empty">Loading prices...</p>`;
+
+    try {
+      const results = await searchProcedurePrices(term);
+      console.log("First price result:", results[0]);
+      renderPriceResults(results);
+    } catch (err) {
+      console.error("Price lookup failed:", err);
+      container.innerHTML = `<p class="insurance-empty">Price lookup failed. Try another procedure.</p>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Compare Prices";
+    }
+  });
+}
+
+
 
 window.toggleChat = toggleChat;
 window.sendMessage = sendMessage;
