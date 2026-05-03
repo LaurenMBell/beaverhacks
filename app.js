@@ -93,12 +93,18 @@ const elements = {
   viewToggle: document.querySelector("#view-toggle"),
 };
 
-const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey;
-
 // At the top of app.js, before bootstrap()
 async function loadConfig() {
-  const res = await fetch('/api/config');
-  window.APP_CONFIG = await res.json();
+  try {
+    // Try to get config from API (production/Vercel)
+    const res = await fetch('/api/get-config');
+    window.APP_CONFIG = await res.json();
+  } catch (error) {
+    // Fallback to local config file for development
+    console.log('API not available, using local config');
+    const res = await fetch('/config.json');
+    window.APP_CONFIG = await res.json();
+  }
 }
 
 await loadConfig();
@@ -110,7 +116,8 @@ function bootstrap() {
   syncActiveChips();
   setActiveView(state.activeView);
 
-  if (!googleMapsApiKey || googleMapsApiKey === "YOUR_GOOGLE_MAPS_API_KEY") {
+  const apiKey = window.APP_CONFIG?.googleMapsApiKey;
+  if (!apiKey || apiKey === "YOUR_GOOGLE_MAPS_API_KEY") {
     renderMapSetupMessage();
     updateStatus(
       "Add your Google Maps API key in config.js, then reload the page to search for providers.",
@@ -149,8 +156,9 @@ function loadGoogleMapsScript() {
   window.initHealthcareFinder = initMapExperience;
 
   const script = document.createElement("script");
+  const apiKey = window.APP_CONFIG?.googleMapsApiKey;
   script.src =
-    `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(googleMapsApiKey)}` +
+    `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}` +
     `&v=weekly&libraries=places&callback=initHealthcareFinder`;
   script.async = true;
   script.defer = true;
