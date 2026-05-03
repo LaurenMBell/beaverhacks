@@ -1,7 +1,8 @@
 :root {
   color-scheme: light;
   --bg: #dfeefa;
-  --panel: rgba(255, 248, 236, 0.94);
+  --panel: #fff8ec;
+  --sidebar: #79a9d1;
   --panel-border: rgba(24, 52, 92, 0.14);
   --text: #16233b;
   --muted: #5b6f88;
@@ -15,6 +16,35 @@
   --radius-lg: 14px;
   --radius-md: 10px;
 }
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(320px, 430px) 1fr;
+  gap: 0;
+  min-height: 100vh;
+  padding: 0;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 22px;
+  min-height: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+  background: var(--sidebar);
+  color: #f7fbff;
+}
+
+.map-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 20px 20px 18px;
+  background: var(--panel);
+}
+
 
 * {
   box-sizing: border-box;
@@ -31,6 +61,7 @@ body {
 
 body {
   min-height: 100vh;
+  background: var(--bg);
 }
 
 .shell {
@@ -43,19 +74,34 @@ body {
 
 .sidebar,
 .map-panel {
-  background: var(--panel);
-  backdrop-filter: blur(18px);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 18px;
+  padding: 24px 22px;
   min-height: 0;
+  background: var(--sidebar);
+  color: #f7fbff;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sidebar-mark {
+  flex: 0 0 auto;
+  font-size: 5rem;
+  line-height: 0.8;
+  font-weight: 800;
+  color: #fdfdfd;
 }
 
 .eyebrow,
@@ -65,7 +111,7 @@ body {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent-strong);
+  color: rgba(247, 251, 255, 0.88);
 }
 
 h1,
@@ -78,11 +124,24 @@ h1 {
   font-size: clamp(2.2rem, 4vw, 3.5rem);
   line-height: 0.95;
   letter-spacing: -0.05em;
+  color: #fdfdfd;
 }
 
 .map-note,
 .status-message {
   color: var(--muted);
+}
+
+.sidebar .field span,
+.sidebar .checkbox-row span {
+  color: #f7fbff;
+}
+
+.service-picker-label {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #f7fbff;
 }
 
 .search-panel {
@@ -113,7 +172,7 @@ select {
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid rgba(31, 36, 48, 0.12);
-  background: var(--surface-strong);
+  background: rgba(255, 250, 241, 0.98);
   color: var(--text);
 }
 
@@ -166,8 +225,8 @@ button:focus {
 
 .chip {
   border: 1px solid rgba(31, 36, 48, 0.12);
-  background: var(--accent);
-  color: #f7fbff;
+  background: var(--surface);
+  color: var(--accent-strong);
   border-radius: 999px;
   padding: 10px 14px;
   cursor: pointer;
@@ -181,6 +240,7 @@ button:focus {
 .chip.is-active {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
+  color: #f7fbff;
 }
 
 .map-panel {
@@ -274,9 +334,9 @@ button:focus {
   flex: 1;
   min-height: 0;
   margin-top: 12px;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  background: var(--surface);
+  background: #fffdf8;
   border: 1px solid rgba(24, 52, 92, 0.08);
 }
 
@@ -304,7 +364,7 @@ button:focus {
 .result-card {
   padding: 14px;
   border-radius: var(--radius-lg);
-  background: var(--surface-strong);
+  background: #fffaf1;
   border: 1px solid rgba(31, 36, 48, 0.08);
 }
 
@@ -388,14 +448,12 @@ button:focus {
 
 @media (max-width: 680px) {
   .shell {
-    padding: 8px;
-    gap: 8px;
+    gap: 0;
   }
 
   .sidebar,
   .map-panel {
     padding: 14px;
-    border-radius: 16px;
   }
 
   .map-header,
@@ -648,7 +706,7 @@ button:focus {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: #1a73e8;
+  background: #1a355d;
   color: white;
   border: none;
   border-radius: 24px;
@@ -675,7 +733,7 @@ button:focus {
 }
 
 #chat-header {
-  background: #1a73e8;
+  background: #1a355d;
   color: white;
   padding: 14px 16px;
   display: flex;
@@ -746,7 +804,7 @@ button:focus {
 }
 
 #chat-input-area button {
-  background: #1a73e8;
+  background: #79a9d1;
   color: white;
   border: none;
   border-radius: 20px;
