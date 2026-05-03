@@ -21,6 +21,14 @@ A web app for finding healthcare services in Benton County, Oregon with the Goog
 
 ## Notes
 
-- This app is client-side only, so your API key should be restricted by HTTP referrer in Google Cloud.
-- Search is tuned for Benton County by combining Google Places text search with a Benton County geographic filter.
-- The UI defaults to Corvallis and works well for nearby communities such as Philomath, Alsea, Monroe, Adair Village, and North Albany-area searches.
+### AI Tools Used
+- Codex to resolve merge conflicts
+- Codex and Claude to assist writing code for API Integration
+- Codex to create initial website draft
+
+### Tech Stack
+- Javascript for backend and API integration
+- HTML, CSS for frontend
+- Demo Video: 
+
+
