@@ -1,3 +1,101 @@
+import { auth, db } from "./firebase.js";
+import {
+  browserSessionPersistence,
+  setPersistence,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+import {
+  doc,
+  setDoc,
+  getDocs,
+  deleteDoc,
+  collection,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+const status = document.getElementById("auth-status");
+const loginBox = document.getElementById("login-box");
+const logoutButton = document.getElementById("logout-btn")
+const savedFavoriteIds = new Set();
+
+// SIGN UP
+document.getElementById("signup-btn").onclick = async () => {
+  try {
+    await createUserWithEmailAndPassword(auth, email.value, password.value);
+    status.textContent = "Account created!";
+  } catch (err) {
+    status.textContent = err.message;
+  }
+};
+
+// LOGIN
+document.getElementById("login-btn").onclick = async () => {
+  try {
+    await signInWithEmailAndPassword(auth, email.value, password.value);
+    const user = auth.currentUser;
+    loadFavoritesForUser(user);
+  } catch (err) {
+    status.textContent = err.message;
+  }
+};
+
+async function loadFavoritesForUser(user) {
+  savedFavoriteIds.clear();
+
+  const snapshot = await getDocs(collection(db, "users", user.uid, "favorites"));
+
+  snapshot.forEach((doc) => {
+    savedFavoriteIds.add(doc.id);
+  });
+}
+
+// LOGOUT
+document.getElementById("logout-btn").onclick = async () => {
+  email.value = "";
+  password.value = "";
+  logoutButton.style.display = "none";
+  await signOut(auth);
+};
+
+let appStarted = false;
+
+// forces signout upon refresh of page
+// await signOut(auth);
+
+onAuthStateChanged(auth, async (user) => {
+  const loginBox = document.getElementById("login-box");
+  const sidebar = document.querySelector(".sidebar");
+  const mapPanel = document.querySelector(".map-panel");
+
+  if (user) {
+    loginBox.style.display = "none";
+    sidebar.style.display = "block";
+    mapPanel.style.display = "block";
+    logoutButton.style.display = "block";
+
+    await loadFavoritesForUser(user);
+
+    if (!appStarted) {
+      appStarted = true;
+      bootstrap();
+    }
+  } else {
+    loginBox.style.display = "block";
+    sidebar.style.display = "none";
+    mapPanel.style.display = "none";
+  }
+});
+
+
+
+
+
 const COUNTY = {
   center: { lat: 44.5646, lng: -123.262 },
   label: "Benton County, Oregon",
@@ -91,11 +189,10 @@ const elements = {
   statusMessage: document.querySelector("#status-message"),
   summaryPill: document.querySelector("#summary-pill"),
   viewToggle: document.querySelector("#view-toggle"),
+  favoritesInput: document.querySelector("#favorites-input"),
 };
 
 const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey;
-
-bootstrap();
 
 function bootstrap() {
   bindEvents();
@@ -113,7 +210,58 @@ function bootstrap() {
   loadGoogleMapsScript();
 }
 
+function getFavoriteId(result) {
+  return result.name.toLowerCase().replaceAll(" ", "-");
+}
+
 function bindEvents() {
+
+  let isFavOn = false;
+  let favs = [];
+  elements.resultsList.addEventListener("click", async (event) => {
+    const favButton = event.target.closest(".fav-btn");
+
+    if (!favButton) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const card = favButton.closest(".result-card");
+    const index = Number(card.dataset.resultIndex);
+    const result = state.results[index];
+
+    const favoriteId = getFavoriteId(result);
+    const user = auth.currentUser;
+    const favoriteRef = doc(db, "users", user.uid, "favorites", favoriteId);
+
+    try {
+    if (savedFavoriteIds.has(favoriteId)) {
+      await deleteDoc(favoriteRef);
+      savedFavoriteIds.delete(favoriteId);
+      favButton.textContent = "🤍";
+    } else {
+      await setDoc(favoriteRef, {
+        name: result.name,
+        address: result.address,
+        phone: result.phone,
+        websiteUri: result.websiteUri,
+        googleMapsUri: result.googleMapsUri,
+        serviceType: result.serviceType,
+        savedAt: serverTimestamp()
+      });
+
+      savedFavoriteIds.add(favoriteId);
+      favButton.textContent = "💖";
+    }
+  } catch (error) {
+    console.error("Could not update favorite:", error);
+    alert(error.message);
+  }
+});
+
+
   elements.searchForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await performSearch();
@@ -180,6 +328,7 @@ async function performSearch({ initial = false } = {}) {
     elements.locationInput.value.trim() || COUNTY.fallbackLocationLabel;
   const keywordQuery = elements.keywordsInput.value.trim();
   const openNowOnly = elements.openNowInput.checked;
+  const favoritesOnly = elements.favoritesInput.checked;
 
   setLoading(true, service.label);
   updateStatus(
@@ -225,10 +374,17 @@ async function performSearch({ initial = false } = {}) {
     }
 
     const { places = [] } = await Place.searchByText(request);
-    const results = places
+
+    let results = places
       .map((place) => normalizePlace(place, searchOrigin.formattedAddress))
       .filter((place) => place.location && isWithinCountyBoundary(place.location))
       .sort((left, right) => left.distanceMeters - right.distanceMeters);
+
+    if (favoritesOnly) {
+      results = results.filter((result) =>
+        savedFavoriteIds.has(getFavoriteId(result))
+      );
+    }
 
     state.results = results;
     if (state.map) {
@@ -325,6 +481,8 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
         .filter(Boolean)
         .join("");
 
+      const favoriteId = getFavoriteId(result);
+      const isSaved = savedFavoriteIds.has(favoriteId);
       return `
         <article class="result-card" data-result-index="${index}">
           <h3>${escapeHtml(result.name)}</h3>
@@ -332,17 +490,22 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
           <p class="result-address">${escapeHtml(result.address)}</p>
           <p class="result-hours">${escapeHtml(result.hours)}</p>
           <div class="result-actions">${actions}</div>
+          <button class="fav-btn" type="button">${isSaved ? "💖" : "🤍"}</button>
         </article>
       `;
     })
     .join("");
 
   [...elements.resultsList.querySelectorAll(".result-card")].forEach((card) => {
-    card.addEventListener("click", () => {
-      const index = Number(card.dataset.resultIndex);
-      focusResult(index);
-    });
+  card.addEventListener("click", (event) => {
+    if (event.target.closest(".fav-btn")) {
+      return;
+    }
+
+    const index = Number(card.dataset.resultIndex);
+    focusResult(index);
   });
+});
 }
 
 function renderMarkers(results) {
@@ -712,7 +875,6 @@ function autoSearchFromReply(reply) {
     syncActiveChip(mapped);
     performSearch();
 
-    addMessage('bot', `🔍 I found nearby ${found}s for you!`);
   }
 }
 

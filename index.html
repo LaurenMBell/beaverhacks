@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Benton County Healthcare Finder</title>
+    <button id="logout-btn" type="button">Logout</button>
     <meta
       name="description"
       content="Find healthcare services in Benton County, Oregon with Google Maps Places."
@@ -18,6 +19,17 @@
   </head>
   <body>
     <div class="shell">
+        <div id="login-box">
+          <h2>Login</h2>
+
+          <input id="email" type="email" placeholder="Email" />
+          <input id="password" type="password" placeholder="Password" />
+
+          <button id="login-btn">Login</button>
+          <button id="signup-btn">Sign Up</button>
+          <button id="logout-btn" style="display:none;">Logout</button>
+        <p id="auth-status"></p>
+      </div>
       <section class="sidebar">
         <div class="eyebrow">Benton County, Oregon</div>
         <h1>Healthcare Finder</h1>
@@ -63,6 +75,11 @@
           <label class="checkbox-row">
             <input id="open-now-input" type="checkbox" name="open-now" />
             <span>Open now</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input id="favorites-input" type="checkbox" name="favorites" />
+            <span>Favorites</span>
           </label>
 
           <button id="search-button" class="search-button" type="submit">
