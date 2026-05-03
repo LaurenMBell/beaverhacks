@@ -1,33 +1,34 @@
 # Benton County Healthcare Finder
 
-A lightweight, static web app for finding healthcare services in Benton County, Oregon with the Google Maps JavaScript API and the Places Library.
+A web app for finding healthcare services in Benton County, Oregon with the Google Maps JavaScript API and the Places Library for visualization.
 
 ## What this includes
 
 - Benton County-focused healthcare search experience
 - Google map with place markers
 - Search by address or ZIP code
-- Service filters for common healthcare needs
+- Filter by common healthcare needs
+- Filter by travel time and transportation type
 - Result cards with ratings, phone numbers, hours, website links, and directions
+- Populates insurances accepted for each location
+- Details real cost of medical procedures
+- Secure login with Google Firebase to save favorite places
 - No build step or framework required
 
 ## Setup
 
-1. Create a Google Maps Platform API key.
-2. Enable these APIs in your Google Cloud project:
-   - Maps JavaScript API
-   - Places API (New)
-3. Open [config.js](/Users/laurenbell/Desktop/beaverhacks/config.js) and replace `YOUR_GOOGLE_MAPS_API_KEY` with your key.
-4. Serve the project locally:
-
-```bash
-python3 -m http.server 4173
-```
-
-5. Visit [http://localhost:4173](http://localhost:4173).
+ Visit (https://beaverhacks-livid.vercel.app/).
 
 ## Notes
 
-- This app is client-side only, so your API key should be restricted by HTTP referrer in Google Cloud.
-- Search is tuned for Benton County by combining Google Places text search with a Benton County geographic filter.
-- The UI defaults to Corvallis and works well for nearby communities such as Philomath, Alsea, Monroe, Adair Village, and North Albany-area searches.
+### AI Tools Used
+- Codex to resolve merge conflicts
+- Codex and Claude to assist writing code for API Integration
+- Codex to create initial website draft
+
+### Tech Stack
+- Javascript for backend and API integration
+- HTML, CSS for frontend
+- Demo Video: 
+
+
