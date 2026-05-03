@@ -1,0 +1,25 @@
+{
+  "name": "beaverhacks",
+  "version": "1.0.0",
+  "description": "A lightweight, static web app for finding healthcare services in Benton County, Oregon with the Google Maps JavaScript API and the Places Library.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LaurenMBell/beaverhacks.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/LaurenMBell/beaverhacks/issues"
+  },
+  "homepage": "https://github.com/LaurenMBell/beaverhacks#readme",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "vite": "^8.0.10"
+  }
+}

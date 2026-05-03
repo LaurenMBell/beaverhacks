@@ -68,9 +68,11 @@ const state = {
   geocoder: null,
   infoWindow: null,
   map: null,
+  mapCircle: null,
   markers: [],
   results: [],
   searchOrigin: COUNTY.center,
+  activeView: "results",
 };
 
 const elements = {
@@ -78,14 +80,23 @@ const elements = {
   keywordsInput: document.querySelector("#keywords-input"),
   locationInput: document.querySelector("#location-input"),
   map: document.querySelector("#map"),
+  mapView: document.querySelector("#map-view"),
   openNowInput: document.querySelector("#open-now-input"),
   resultsList: document.querySelector("#results-list"),
+  // ADD THESE:
+  insuranceZip: document.querySelector("#insurance-zip"),
+  insuranceIncome: document.querySelector("#insurance-income"),
+  insuranceAge: document.querySelector("#insurance-age"),
+  insuranceForm: document.querySelector("#insurance-form"),
+  insuranceSection: document.querySelector("#insurance-form-section"),
+  resultsView: document.querySelector("#results-view"),
   resultsTitle: document.querySelector("#results-title"),
   searchButton: document.querySelector("#search-button"),
   searchForm: document.querySelector("#search-form"),
   serviceSelect: document.querySelector("#service-select"),
   statusMessage: document.querySelector("#status-message"),
   summaryPill: document.querySelector("#summary-pill"),
+  viewToggle: document.querySelector("#view-toggle"),
 };
 
 const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey;
@@ -97,6 +108,7 @@ bootstrap();
 
 function bootstrap() {
   bindEvents();
+  setActiveView(state.activeView);
 
   if (!googleMapsApiKey || googleMapsApiKey === "YOUR_GOOGLE_MAPS_API_KEY") {
     renderMapSetupMessage();
@@ -114,6 +126,10 @@ function bindEvents() {
   elements.searchForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     await performSearch();
+  });
+
+  elements.viewToggle.addEventListener("click", async () => {
+    await setActiveView(state.activeView === "results" ? "map" : "results");
   });
 
   elements.chips.forEach((chip) => {
@@ -155,18 +171,8 @@ function loadGoogleMapsScript() {
 }
 
 async function initMapExperience() {
-  state.map = new google.maps.Map(elements.map, {
-    center: COUNTY.center,
-    zoom: 11,
-    mapTypeControl: false,
-    streetViewControl: false,
-    fullscreenControl: false,
-  });
-
   state.geocoder = new google.maps.Geocoder();
   state.infoWindow = new google.maps.InfoWindow();
-
-  drawCountyBoundaryHint();
   updateStatus(
     "Search for primary care, urgent care, pharmacies, mental health, and more across Benton County.",
     "Map ready"
@@ -177,7 +183,9 @@ async function initMapExperience() {
 
 
 async function performSearch({ initial = false } = {}) {
-  if (!state.map || !state.geocoder) return;
+  if (!state.geocoder) {
+    return;
+  }
 
   const service = HEALTHCARE_SERVICES[elements.serviceSelect.value];
   const locationQuery =
@@ -195,8 +203,10 @@ async function performSearch({ initial = false } = {}) {
     const searchOrigin = await geocodeLocation(locationQuery);
     state.searchOrigin = searchOrigin.location;
 
-    state.map.panTo(searchOrigin.location);
-    state.map.setZoom(11);
+    if (state.map) {
+      state.map.panTo(searchOrigin.location);
+      state.map.setZoom(11);
+    }
 
     const { Place } = await google.maps.importLibrary("places");
     const request = {
@@ -233,24 +243,29 @@ async function performSearch({ initial = false } = {}) {
       .sort((left, right) => left.distanceMeters - right.distanceMeters);
 
     state.results = results;
-    renderMarkers(results);
+    if (state.map) {
+      renderMarkers(results);
+    }
     renderResults(results, service.label, searchOrigin.formattedAddress, initial);
 
-    // ── Insurance plans — scoped here so locationQuery is accessible ──
-    if (results.length) {
+// Inside performSearch, where it handles insurance:
+  if (results.length) {
     (async () => {
-      try {
-        const zip = resolveZipFromLocation(locationQuery); // no await needed
-        console.log("Fetching insurance plans for ZIP:", zip); // should print "97330", not "Promise"
-        const plans = await fetchInsurancePlans(zip);
-        console.log("Total plans returned:", plans?.length);
-        renderInsurancePanel(plans);
-    } catch (err) {
-    console.warn("Insurance plan fetch failed:", err);
-    document.getElementById("insurance-panel")?.remove();
-    }
-})();
-    } else {
+        try {
+            const zip = resolveZipFromLocation(locationQuery);
+            const plans = await fetchInsurancePlans(zip);
+            
+            // Check if resultsList exists before trying to attach something to it
+            if (elements.resultsList) {
+                renderInsurancePanel(plans);
+            } else {
+                console.error("Could not find #results-list to attach insurance panel.");
+            }
+        } catch (err) {
+            console.warn("Insurance plan fetch failed:", err);
+        }
+    })();
+  } else {
       document.getElementById("insurance-panel")?.remove();
     }
 
@@ -304,32 +319,16 @@ function normalizePlace(place, searchAddress) {
 
 function renderResults(results, serviceLabel, resolvedLocation, initial) {
   elements.resultsTitle.textContent = `${serviceLabel} near ${resolvedLocation}`;
-
   if (!results.length) {
     elements.resultsList.innerHTML = "";
     updateStatus(
       initial
-        ? "No matching healthcare services were returned yet. Try another category or a nearby ZIP code."
-        : "No matching services were found inside Benton County. Try broadening the service type or location.",
+        ? "No matching healthcare services were returned yet."
+        : "No matching services were found inside Benton County.",
       "No results"
     );
     return;
   }
-  if (results.length) {
-  (async () => {
-    try {
-      const zip = resolveZipFromLocation(locationQuery);
-      const plans = await fetchInsurancePlans(zip);
-      renderInsurancePanel(plans);
-    } catch (err) {
-      console.warn("Insurance plan fetch failed:", err);
-      document.getElementById("insurance-panel")?.remove();
-    }
-  })();
-} else {
-  document.getElementById("insurance-panel")?.remove();
-}
-
   updateStatus(
     `Found ${results.length} ${serviceLabel.toLowerCase()} result${results.length === 1 ? "" : "s"} in or near Benton County.`,
     `${results.length} found`
@@ -406,11 +405,17 @@ function renderMarkers(results) {
   state.map.fitBounds(bounds, 56);
 }
 
-function focusResult(index) {
+async function focusResult(index) {
   const result = state.results[index];
+
+  if (!result) {
+    return;
+  }
+
+  await setActiveView("map");
   const marker = state.markers[index];
 
-  if (!result || !marker) {
+  if (!marker) {
     return;
   }
 
@@ -472,8 +477,71 @@ function renderMapSetupMessage(customMessage) {
   `;
 }
 
+async function setActiveView(view) {
+  state.activeView = view === "map" ? "map" : "results";
+
+  const showingResults = state.activeView === "results";
+  elements.resultsView.hidden = !showingResults;
+  elements.mapView.hidden = showingResults;
+  elements.resultsView.classList.toggle("panel-view-active", showingResults);
+  elements.mapView.classList.toggle("panel-view-active", !showingResults);
+  elements.viewToggle.classList.toggle("is-map", !showingResults);
+  elements.viewToggle.setAttribute("aria-pressed", String(!showingResults));
+
+  if (!showingResults) {
+    await nextFrame();
+    await ensureMapInitialized();
+
+    if (state.map && window.google?.maps) {
+      renderMarkers(state.results);
+      window.requestAnimationFrame(() => {
+        google.maps.event.trigger(state.map, "resize");
+        if (!state.results.length) {
+          state.map.panTo(state.searchOrigin);
+          state.map.setZoom(11);
+        }
+      });
+    }
+  }
+}
+
+async function ensureMapInitialized() {
+  if (state.map || !window.google?.maps) {
+    return;
+  }
+
+  await nextFrame();
+
+  state.map = new google.maps.Map(elements.map, {
+    center: state.searchOrigin,
+    zoom: 11,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+  });
+
+  drawCountyBoundaryHint();
+
+  if (state.results.length) {
+    renderMarkers(state.results);
+    window.requestAnimationFrame(() => {
+      google.maps.event.trigger(state.map, "resize");
+    });
+  }
+}
+
+function nextFrame() {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
 function drawCountyBoundaryHint() {
-  new google.maps.Circle({
+  if (state.mapCircle) {
+    state.mapCircle.setMap(null);
+  }
+
+  state.mapCircle = new google.maps.Circle({
     map: state.map,
     center: COUNTY.center,
     radius: COUNTY.radiusMeters,
@@ -590,10 +658,10 @@ async function fetchInsurancePlans(zipCode = BENTON_ZIP, userInputs = {}) {
   }
 
   const data = await res.json();
+  
   console.log("Total plans returned:", data.plans?.length);
   return data.plans ?? [];
 }
-
 
 function renderInsurancePanel(plans) {
   document.getElementById("insurance-panel")?.remove();
@@ -602,99 +670,71 @@ function renderInsurancePanel(plans) {
   panel.id = "insurance-panel";
   panel.className = "insurance-panel";
 
-  if (!plans || !plans.length) {
-    panel.innerHTML = `
-      <div class="insurance-fallback">
-        <p>Browse Oregon health insurance plans directly on the marketplace:</p>
-        <a href="https://ohim.checkbookhealth.org/#/pct/individual"
-           target="_blank" rel="noreferrer">Compare Oregon Health Plans →</a>
-      </div>
-    `;
-    elements.resultsList.after(panel);
-    return;
-  }
-
-  // Group by metal level
-  const grouped = {
-    Bronze: plans.filter(p => p.metal_level === "Bronze"),
-    Silver: plans.filter(p => p.metal_level === "Silver"),
-    Gold: plans.filter(p => p.metal_level === "Gold"),
-    Platinum: plans.filter(p => p.metal_level === "Platinum"),
-  };
-
-  // Only include metal levels that actually have plans
-  const availableLevels = Object.keys(grouped).filter(
-    level => grouped[level].length > 0
-  );
-
-  // Build tab buttons for each available metal level
-  const tabButtons = availableLevels.map((level, i) => `
-    <button
-      class="metal-tab ${i === 0 ? "is-active" : ""}"
-      data-level="${level}"
-      type="button"
-    >
-      ${level}
-      <span class="metal-tab-count">${grouped[level].length}</span>
-    </button>
-  `).join("");
-
-  // Build cards for each metal level group
-  const allCards = availableLevels.map((level, i) => `
-    <div
-      class="metal-group ${i === 0 ? "is-active" : ""}"
-      data-level="${level}"
-    >
-      <div class="insurance-cards">
-        ${grouped[level]
-          .sort((a, b) => (a.premium ?? 9999) - (b.premium ?? 9999))
-          .map(plan => `
-            <article class="insurance-card">
-              <div class="insurance-card-header">
-                <span class="insurance-card-name">${escapeHtml(plan.name ?? "Plan")}</span>
-                <span class="insurance-card-type metal-${level.toLowerCase()}">${escapeHtml(level)}</span>
-              </div>
-              <div class="insurance-card-meta">
-                <span><strong>$${plan.premium != null ? plan.premium.toFixed(0) : "—"}</strong>/mo</span>
-                <span>Deductible: $${plan.deductibles?.[0]?.amount?.toLocaleString() ?? "—"}</span>
-                <span>OOP max: $${plan.moops?.[0]?.amount?.toLocaleString() ?? "—"}</span>
-              </div>
-              <div class="insurance-card-issuer">${escapeHtml(plan.issuer?.name ?? "")}</div>
-              ${plan.url
-                ? `<a class="insurance-card-link" href="${plan.url}" target="_blank" rel="noreferrer">View plan details</a>`
-                : ""}
-            </article>
-          `).join("")}
-      </div>
-    </div>
-  `).join("");
+  const safePlans = Array.isArray(plans) ? plans : [];
 
   panel.innerHTML = `
-    <h2 class="insurance-title">Oregon Marketplace Insurance Plans</h2>
-    <p class="insurance-subtitle">
-      Sorted by estimated monthly premium.
-      <a href="https://ohim.checkbookhealth.org/#/pct/individual"
-         target="_blank" rel="noreferrer">Compare all plans →</a>
-    </p>
-    <div class="metal-tabs">${tabButtons}</div>
-    <div class="metal-groups">${allCards}</div>
+    <h3 class="insurance-title">Available Plans</h3>
+
+    ${
+      safePlans.length
+        ? `
+          <div class="insurance-cards">
+            ${safePlans.slice(0, 3).map((plan) => {
+  const planData = plan.plan || plan;
+
+  const links = [
+    { label: "Plan details", url: planData.url || planData.plan_url || planData.detail_url },
+    { label: "Brochure", url: planData.brochure_url || planData.brochureUrl },
+    { label: "Benefits", url: planData.benefits_url || planData.benefitsUrl || planData.sbc_url },
+    { label: "Provider directory", url: planData.network_url || planData.provider_directory_url },
+    { label: "Drug list", url: planData.formulary_url || planData.drug_formulary_url },
+  ].filter((link) => link.url);
+
+  return `
+    <div class="insurance-card">
+      <div class="insurance-card-header">
+        <span class="insurance-card-name">
+          ${escapeHtml(planData.name || "Plan name unavailable")}
+        </span>
+        <span class="plan-price">
+          $${escapeHtml(plan.premium ?? planData.premium ?? "N/A")}/mo
+        </span>
+      </div>
+
+      <p><strong>ID:</strong> ${escapeHtml(planData.id || plan.id || "ID unavailable")}</p>
+      <p>Issuer: ${escapeHtml(planData.issuer?.name || planData.issuer_name || "Issuer unavailable")}</p>
+      <small>
+        Type: ${escapeHtml(planData.type || "N/A")} |
+        Metal: ${escapeHtml(planData.metal_level || "N/A")}
+      </small>
+
+      <div class="insurance-card-links">
+        ${
+          links.length
+            ? links.map((link) => `
+                <a href="${escapeHtml(link.url)}" target="_blank" rel="noreferrer">
+                  ${escapeHtml(link.label)}
+                </a>
+              `).join("")
+            : `<span class="insurance-card-no-link">No plan links available</span>`
+        }
+      </div>
+    </div>
+  `;
+}).join("")}
+
+          </div>
+        `
+        : `<p class="insurance-empty">No plans found.</p>`
+    }
   `;
 
-  // Wire up tab switching
-  panel.querySelectorAll(".metal-tab").forEach(tab => {
-    tab.addEventListener("click", () => {
-      const level = tab.dataset.level;
-
-      panel.querySelectorAll(".metal-tab").forEach(t => t.classList.remove("is-active"));
-      panel.querySelectorAll(".metal-group").forEach(g => g.classList.remove("is-active"));
-
-      tab.classList.add("is-active");
-      panel.querySelector(`.metal-group[data-level="${level}"]`).classList.add("is-active");
-    });
-  });
-
-  elements.resultsList.after(panel);
+  elements.resultsList.appendChild(panel);
 }
+
+
+
+ 
 function resolveZipFromLocation(locationQuery) {
   // Try to extract a 5-digit ZIP from the query string first
   const match = locationQuery.match(/\b(\d{5})\b/);
