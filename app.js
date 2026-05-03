@@ -239,12 +239,6 @@ async function performSearch({ initial = false } = {}) {
 state.routeOrigin = routeOrigin.location;
 state.searchOrigin = routeOrigin.location;
 
-if (state.map) {
-  //state.map.panTo(routeOrigin.location);
-  //state.map.setZoom(11);
-  renderMarkers(results);
-}
-
 const { Place } = await google.maps.importLibrary("places");
 const request = {
   textQuery: buildTextQuery(service.query, locationQuery, keywordQuery),
@@ -363,26 +357,26 @@ function normalizePlace(place, searchAddress) {
   const distanceMeters = location
     ? calculateDistanceMeters(state.searchOrigin, location)
     : Number.POSITIVE_INFINITY;
-  const openingHours = place.regularOpeningHours?.weekdayDescriptions;
+
+  const weekdayHours = place.regularOpeningHours?.weekdayDescriptions;
 
   return {
     address: place.formattedAddress || "Address not provided",
     distanceMeters,
-    googleMapsLinks: place.googleMapsLinks || place.googleMapsLinks || "",
-    hours:
-      (Array.isArray(openingHours) && openingHours.length
-        ? openingHours.join(" • ")
-        : null) ||
-      "Hours not available",
+    googleMapsUri: place.googleMapsURI || "",
+    hours: Array.isArray(weekdayHours) && weekdayHours.length
+      ? weekdayHours.join(" • ")
+      : "Hours not available",
     location,
     name: place.displayName || place.name || "Healthcare service",
     phone: place.nationalPhoneNumber || "",
     rating: typeof place.rating === "number" ? place.rating : null,
     searchAddress,
     serviceType: place.primaryTypeDisplayName || place.primaryType || "Healthcare",
-    websiteURI: place.websiteURI || place.websiteURI || "",
+    websiteURI: place.websiteURI || "",
   };
 }
+
 
 function renderResults(results, serviceLabel, resolvedLocation, initial) {
   elements.resultsTitle.textContent = `${serviceLabel} near ${resolvedLocation}`;
@@ -404,7 +398,12 @@ function renderResults(results, serviceLabel, resolvedLocation, initial) {
   elements.resultsList.innerHTML = results
     .map((result, index) => {
       const actions = [
-        result.googleMapsLinks
+        result.bookingUrI
+        ? `<a class="action-book" href="${result.bookingUri}" target="_blank" rel="noreferrer">📅 Book</a>`
+        : result.websiteUri
+        ? `<a class="action-book" href="${result.websiteUrI}" target="_blank" rel="noreferrer">📅 Book</a>`
+        : "",
+        result.googleMapsUri
           ? `<a href="${result.googleMapsLinks}" target="_blank" rel="noreferrer">Directions</a>`
           : "",
         result.websiteURI
@@ -497,6 +496,7 @@ async function focusResult(index) {
 }
 
 function openInfoWindow(result, marker) {
+  const bookingUrl = result.bookingUri || result.websiteUrI || "";
   const details = [
     `<strong>${escapeHtml(result.name)}</strong>`,
     `<div>${escapeHtml(result.address)}</div>`,
@@ -724,14 +724,13 @@ function formatTravelTime(seconds) {
 
 async function fetchPlaceDetails(place) {
   const detailFields = [
-    "googleMapsLinks",
+    "googleMapsURI",
     "websiteURI",
     "nationalPhoneNumber",
     "regularOpeningHours",
   ];
 
   if (!place?.fetchFields) return;
-
   try {
     await place.fetchFields({ fields: detailFields });
   } catch (error) {

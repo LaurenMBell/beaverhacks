@@ -834,3 +834,22 @@ button:focus {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ── Book button ──────────────────────────────────────────────── */
+.action-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: #0f766e;
+  color: white !important;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none !important;
+  transition: background 0.15s;
+}
+
+.action-book:hover {
+  background: #0d6560;
+}
