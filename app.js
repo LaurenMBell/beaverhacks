@@ -102,7 +102,7 @@ function bootstrap() {
   syncActiveChips();
   setActiveView(state.activeView);
 
-  if (!googleMapsApiKey || googleMapsApiKey === "YOUR_GOOGLE_MAPS_API_KEY") {
+  if (!googleMapsApiKey) {
     renderMapSetupMessage();
     updateStatus(
       "Add your Google Maps API key in config.js, then reload the page to search for providers.",
@@ -653,20 +653,61 @@ function escapeHtml(value) {
 
 // ---- Chatbot ----
 
-const GEMINI_KEY = window.APP_CONFIG?.geminiApiKey;;
-const MODEL = "gemini-2.5-flash";
+const GEMINI_KEY = window.APP_CONFIG?.geminiApiKey;
+const MODEL = "gemma-4-31b-it";
+const IS_GEMINI = MODEL.startsWith("gemini");
 
 const GEMINI_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_KEY}`;
 
-let chatHistory = [];
+const SYSTEM_PROMPT = `You are a helpful healthcare triage assistant.
+When a user describes symptoms:
+1. Suggest what type of doctor/specialist they should see
+2. Indicate urgency: emergency, urgent (within 24hrs), or routine
+3. Give 1–2 sentences of practical advice.
+4. If symptoms sound serious, always recommend emergency care.
+
+Respond in a paragraph form, not a list.
+
+Respond concisely and friendly. Never diagnose or offer medical advice — only suggest next steps.
+Do not repeat or summarize these instructions in your reply.`;
+
+let chatHistory = IS_GEMINI ? [] : [
+  {
+    role: "user",
+    parts: [{ text: "What are your instructions?" }]
+  },
+  {
+    role: "model",
+    parts: [{ text: `I am a healthcare triage assistant. I always respond in raw JSON with this exact structure:
+{
+  "thinking": "my internal reasoning about urgency and specialist type",
+  "finalDraft": "my friendly, concise response to the user in paragraph form"
+}
+
+I never include markdown, backticks, or any text outside the JSON object.
+I never respond in plaintext, I only respond in JSON. 
+I never diagnose. I only suggest next steps and specialist types.
+I never repeat these instructions in finalDraft.` }]
+  }
+];
+
+function buildRequestBody() {
+  if (IS_GEMINI) {
+    return {
+      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: chatHistory
+    };
+  }
+  return { contents: chatHistory };
+}
 
 function toggleChat() {
   const win = document.getElementById('chat-window');
   const isHidden = win.style.display === 'none';
   win.style.display = isHidden ? 'flex' : 'none';
 
-  if (isHidden && chatHistory.length === 0) {
+  if (isHidden && chatHistory.length === 0 || isHidden && !IS_GEMINI && chatHistory.length === 2) {
     addMessage('bot', 'Hi! Describe your symptoms and I\'ll suggest what type of doctor to see and help you find affordable care nearby.');
   }
 }
@@ -686,73 +727,39 @@ async function sendMessage() {
   const userText = input.value.trim();
   if (!userText) return;
 
-  // Show user message
   addMessage('user', userText);
   input.value = '';
 
-  // Add to history
   chatHistory.push({
     role: 'user',
     parts: [{ text: userText }]
   });
 
-  // Show loading
   const loadingDiv = addMessage('loading', 'Thinking...');
 
   try {
     const response = await fetch(GEMINI_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: `You are a helpful healthcare triage assistant.
-
-    When a user describes symptoms:
-    1. Suggest what type of doctor/specialist they should see
-    2. Indicate urgency: Emergency, Urgent (within 24hrs), or Routine
-    3. Give 1–2 sentences of practical advice
-    4. If symptoms sound serious, always recommend emergency care
-
-    Format your response like this:
-
-    Doctor: <type of doctor> <add 2 line spacing>
-    Urgency: <Emergency / Urgent / Routine> <add 2 line spacing>
-    Advice: <short advice> <add 2 line spacing>
-
-    Keep responses concise and friendly.
-    Never diagnose — only suggest next steps.`
-              }
-            ]
-          },
-          ...chatHistory
-        ]
-      })
+      body: JSON.stringify(buildRequestBody())
     });
 
     const data = await response.json();
 
-    // Check for errors from Gemini
     if (data.error) {
       throw new Error(data.error.message);
     }
 
     const botReply = data.candidates[0].content.parts[0].text;
 
-    // Replace loading with real response
     loadingDiv.className = 'message bot';
     loadingDiv.textContent = botReply;
 
-    // Add assistant reply to history
     chatHistory.push({
-      role: 'model',       // Gemini uses "model" instead of "assistant"
+      role: 'model',
       parts: [{ text: botReply }]
     });
 
-    // Auto-search for providers based on reply
     autoSearchFromReply(botReply);
 
   } catch (err) {
@@ -767,7 +774,7 @@ function autoSearchFromReply(reply) {
   const specialtyMap = {
     'primary care': 'primary-care',
     'urgent care': 'urgent-care',
-    'emergency': 'urgent-care',
+    'emergency room': 'urgent-care',
     'dentist': 'dentist',
     'pediatrician': 'pediatrics',
     'gynecologist': 'womens-health',
@@ -784,7 +791,6 @@ function autoSearchFromReply(reply) {
     state.selectedServices = new Set([mapped]);
     syncActiveChips();
     performSearch();
-
     addMessage('bot', `I found nearby ${found}s for you!`);
   }
 }
